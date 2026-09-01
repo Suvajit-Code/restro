@@ -18,6 +18,7 @@ app.set('view engine', 'html');
 // Use __dirname for Vercel compatibility (works in both local & serverless)
 app.set('views', path.join(__dirname, '..', 'views'));
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
 
 app.get('/static/uploads/:id', async (req, res, next) => {
     const id = req.params.id;
@@ -101,33 +102,43 @@ if (!process.env.VERCEL) {
     const { createServer } = require('http');
     const { Server } = require('socket.io');
 
-    const server = createServer(app);
-    const io = new Server(server, { cors: { origin: '*' } });
-    setIo(io);
-
-    io.on('connection', (socket: any) => {
-        socket.on('call_staff', (data: any) => {
-            io.emit('staff_called', data);
-        });
-        socket.on('stop_call_staff', (data: any) => {
-            io.emit('staff_call_stopped', data);
-        });
-    });
+    let currentServer: any = null;
 
     const PORT = Number(process.env.PORT) || 5000;
 
     const startServer = (port: number) => {
+        if (currentServer) return;
+
+        const server = createServer(app);
+        currentServer = server;
+
+        const io = new Server(server, { cors: { origin: '*' } });
+        setIo(io);
+
+        io.on('connection', (socket: any) => {
+            socket.on('call_staff', (data: any) => {
+                io.emit('staff_called', data);
+            });
+            socket.on('stop_call_staff', (data: any) => {
+                io.emit('staff_call_stopped', data);
+            });
+        });
+
+        server.once('error', (err: any) => {
+            if (err.code === 'EADDRINUSE') {
+                const nextPort = port + 1;
+                console.log(`[WARN] Port ${port} is busy, trying ${nextPort}...`);
+                currentServer = null;
+                startServer(nextPort);
+                return;
+            }
+            console.error('[FATAL] Server error:', err);
+        });
+
         server.listen(port, async () => {
             await initDb();
             console.log(`[SUCCESS] Empire Restaurant Server is running!`);
             console.log(`👉 Local: http://localhost:${port}`);
-        }).on('error', (err: any) => {
-            if (err.code === 'EADDRINUSE') {
-                console.log(`[WARN] Port ${port} is busy, trying ${port + 1}...`);
-                startServer(port + 1);
-            } else {
-                console.error('[FATAL] Server error:', err);
-            }
         });
     };
 

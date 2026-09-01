@@ -46,6 +46,7 @@ const hasFirebaseConfig = () => Boolean(
 let useFirebase = process.env.USE_FIREBASE === 'true' && hasFirebaseConfig();
 const localDbStore: Record<string, Record<string, any>[]> = {};
 let fallbackWarned = false;
+let initDbPromise: Promise<void> | null = null;
 
 const markFirebaseUnavailable = (err: any) => {
     const message = err && err.message ? String(err.message) : String(err || '');
@@ -225,59 +226,68 @@ export const deleteDb = async (tableName: string, id: string): Promise<void> => 
 };
 
 export const initDb = async (): Promise<void> => {
-    try {
-        const existingUsers = await queryDb('users');
-        if (existingUsers.length > 0) {
-            const existingShops = await queryDb('shops');
-            if (existingShops.length === 0) {
-                await insertDb('shops', {
-                    shop_id: 'KPK-0001',
-                    name: 'Empire Kitchen — Main Branch',
-                    address: '123, Food Street, City Center',
-                    phone: '+91 98765 43210',
-                    manager_id: '',
-                    status: 'Active',
-                    created_at: new Date().toISOString()
-                });
-                console.log('[DB] ✅ Seeded: 1 shop (KPK-0001).');
-            }
-            console.log('[DB] Database already seeded. Skipping users/tables/menu.');
-            return;
-        }
-
-        console.log('[DB] Empty — seeding default data...');
-
-        for (let i = 1; i <= 10; i++) {
-            await insertDb('dining_tables', { table_no: i.toString(), status: 'Clean' });
-        }
-
-        const menu = [
-            { item_name: 'Pasta Arrabbiata', price: 150, category: 'Main Course', available: true },
-            { item_name: 'Chicken Burger', price: 120, category: 'Starter', available: true },
-            { item_name: 'Margherita Pizza', price: 200, category: 'Main Course', available: true },
-            { item_name: 'Grilled Fish', price: 280, category: 'Main Course', available: true },
-            { item_name: 'Paneer Tikka', price: 180, category: 'Starter', available: true },
-            { item_name: 'Coca Cola', price: 50, category: 'Drink', available: true },
-            { item_name: 'Mango Lassi', price: 80, category: 'Drink', available: true },
-            { item_name: 'Chocolate Lava Cake', price: 120, category: 'Dessert', available: true },
-            { item_name: 'Gulab Jamun', price: 60, category: 'Dessert', available: true },
-            { item_name: 'Veg Biryani', price: 160, category: 'Main Course', available: true }
-        ];
-
-        for (const item of menu) await insertDb('menu', item);
-
-        await insertDb('shops', {
-            shop_id: 'KPK-0001',
-            name: 'Empire Kitchen — Main Branch',
-            address: '123, Food Street, City Center',
-            phone: '+91 98765 43210',
-            manager_id: '',
-            status: 'Active',
-            created_at: new Date().toISOString()
-        });
-
-        console.log('[DB] ✅ Seeded default sample data.');
-    } catch (err) {
-        console.error('[DB] Seed error (non-fatal, continuing):', err);
+    if (initDbPromise) {
+        await initDbPromise;
+        return;
     }
+
+    initDbPromise = (async () => {
+        try {
+            const existingUsers = await queryDb('users');
+            if (existingUsers.length > 0) {
+                const existingShops = await queryDb('shops');
+                if (existingShops.length === 0) {
+                    await insertDb('shops', {
+                        shop_id: 'KPK-0001',
+                        name: 'Empire Kitchen — Main Branch',
+                        address: '123, Food Street, City Center',
+                        phone: '+91 98765 43210',
+                        manager_id: '',
+                        status: 'Active',
+                        created_at: new Date().toISOString()
+                    });
+                    console.log('[DB] ✅ Seeded: 1 shop (KPK-0001).');
+                }
+                console.log('[DB] Database already seeded. Skipping users/tables/menu.');
+                return;
+            }
+
+            console.log('[DB] Empty — seeding default data...');
+
+            for (let i = 1; i <= 10; i++) {
+                await insertDb('dining_tables', { table_no: i.toString(), status: 'Clean' });
+            }
+
+            const menu = [
+                { item_name: 'Pasta Arrabbiata', price: 150, category: 'Main Course', available: true },
+                { item_name: 'Chicken Burger', price: 120, category: 'Starter', available: true },
+                { item_name: 'Margherita Pizza', price: 200, category: 'Main Course', available: true },
+                { item_name: 'Grilled Fish', price: 280, category: 'Main Course', available: true },
+                { item_name: 'Paneer Tikka', price: 180, category: 'Starter', available: true },
+                { item_name: 'Coca Cola', price: 50, category: 'Drink', available: true },
+                { item_name: 'Mango Lassi', price: 80, category: 'Drink', available: true },
+                { item_name: 'Chocolate Lava Cake', price: 120, category: 'Dessert', available: true },
+                { item_name: 'Gulab Jamun', price: 60, category: 'Dessert', available: true },
+                { item_name: 'Veg Biryani', price: 160, category: 'Main Course', available: true }
+            ];
+
+            for (const item of menu) await insertDb('menu', item);
+
+            await insertDb('shops', {
+                shop_id: 'KPK-0001',
+                name: 'Empire Kitchen — Main Branch',
+                address: '123, Food Street, City Center',
+                phone: '+91 98765 43210',
+                manager_id: '',
+                status: 'Active',
+                created_at: new Date().toISOString()
+            });
+
+            console.log('[DB] ✅ Seeded default sample data.');
+        } catch (err) {
+            console.error('[DB] Seed error (non-fatal, continuing):', err);
+        }
+    })();
+
+    await initDbPromise;
 };
