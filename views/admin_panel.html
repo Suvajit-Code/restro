@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Super Admin | Empire OS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<%- include('partials/loader.html') %>
+
+<!-- ── Mobile Top Bar (hamburger) ────────────────────────────── -->
+<div class="mobile-topbar">
+    <button class="hamburger-btn" id="openSidebar" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <span class="text-white fw-bold d-flex align-items-center gap-2">
+        <img src="/static/uploads/sg+logo.jpg" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: white; padding: 1px;" alt="Logo">
+        ADMIN
+    </span>
+    <a href="/logout" class="btn btn-outline-danger btn-sm">Logout</a>
+</div>
+
+<!-- ── Sidebar Overlay ──────────────────────────────────────── -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- ── Sidebar ───────────────────────────────────────────────── -->
+<div class="sidebar d-flex flex-column" id="adminSidebar">
+    <div class="text-center mb-3 mt-2">
+        <img src="/static/uploads/sg+logo.jpg" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; background: white; padding: 2px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" alt="Logo">
+    </div>
+    <h4 class="text-center mb-4 fw-bold text-white d-none d-lg-block">
+        <i class="fas fa-shield-alt text-danger me-2"></i> ADMIN
+    </h4>
+    
+    <div class="nav flex-column nav-pills" role="tablist">
+        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#staff" onclick="loadData(); closeSidebarMobile()">
+            <i class="fas fa-users-cog"></i> Staff & Users
+        </button>
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#shops" onclick="loadData(); closeSidebarMobile()">
+            <i class="fas fa-building"></i> Shop Management
+        </button>
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#shopctrl" onclick="loadData(); closeSidebarMobile()">
+            <i class="fas fa-store"></i> Shop Control
+        </button>
+
+        <!-- ── Shop Mode Section ── -->
+        <div style="margin-top:8px; margin-bottom:2px;">
+            <span style="font-size:.65rem;color:#666;text-transform:uppercase;letter-spacing:1.5px;padding:0 10px;">Shop Mode</span>
+        </div>
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#shopmode-access" onclick="loadData(); closeSidebarMobile()" style="padding-left:22px;font-size:.82rem;">
+            <i class="fas fa-briefcase"></i> Shop Access
+        </button>
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#shopmode-cook" onclick="loadData(); closeSidebarMobile()" style="padding-left:22px;font-size:.82rem;">
+            <i class="fas fa-fire"></i> Cook View
+        </button>
+
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#attendance" onclick="loadData(); closeSidebarMobile()">
+            <i class="fas fa-clock"></i> Attendance
+        </button>
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#menu" onclick="loadData(); closeSidebarMobile()">
+            <i class="fas fa-book-open"></i> Menu Items
+        </button>
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#orders" onclick="loadData(); closeSidebarMobile()">
+            <i class="fas fa-receipt"></i> Order History
+        </button>
+    </div>
+    
+    <a href="/logout" class="btn btn-outline-danger mt-auto w-100 fw-bold"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+</div>
+
+<div class="main-content">
+    <div class="tab-content">
+        
+        <div class="tab-pane fade show active" id="staff">
+            <h3 class="mb-4">👥 User Approvals & Management</h3>
+            
+            <div class="mb-4 d-flex flex-wrap gap-2 justify-content-end">
+                <button type="button" class="btn btn-glass-3d secondary fw-bold rounded-pill px-3 shadow-sm" onclick="openCreateUser('Worker')">
+                    <i class="fas fa-user me-2"></i>Worker
+                </button>
+                <button type="button" class="btn btn-glass-3d warning fw-bold rounded-pill px-3 shadow-sm" onclick="openCreateUser('Cook')">
+                    <i class="fas fa-fire me-2"></i>Cook
+                </button>
+                <button type="button" class="btn btn-glass-3d success fw-bold rounded-pill px-3 shadow-sm" onclick="openCreateUser('Cleaner')">
+                    <i class="fas fa-broom me-2"></i>Cleaner
+                </button>
+                <button type="button" class="btn btn-glass-3d info fw-bold rounded-pill px-3 shadow-sm" onclick="openCreateUser('Shop')">
+                    <i class="fas fa-briefcase me-2"></i>Manager
+                </button>
+            </div>
+            <div class="card p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle">
+                        <thead>
+                            <tr class="small text-secondary text-uppercase">
+                                <th>ID</th><th>Profile</th><th>User Details</th>
+                                <th>Shop</th><th>Role & Status</th><th>Admin Remark</th><th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHOP MANAGEMENT TAB -->
+        <div class="tab-pane fade" id="shops">
+            <h3 class="mb-4">🏪 Shop Management</h3>
+            <div class="mb-4 text-end">
+                <button type="button" class="btn btn-glass-3d warning fw-bold rounded-pill px-4 shadow" data-bs-toggle="modal" data-bs-target="#createShopModal">
+                    <i class="fas fa-plus-circle me-2"></i>CREATE NEW SHOP
+                </button>
+            </div>
+            <div class="card p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle">
+                        <thead><tr class="small text-secondary text-uppercase"><th>Shop ID</th><th>Name</th><th>Address</th><th>Phone</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
+                        <tbody id="shops-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="tab-pane fade" id="shopctrl">
+            <h3 class="mb-4 text-info"><i class="fas fa-eye"></i> Shop Operations Oversight</h3>
+            
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-warning border-start border-4">
+                        <div class="card-header bg-warning text-dark fw-bold">
+                            <i class="fas fa-fire me-2"></i> Live Kitchen Activity
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-striped mb-0">
+                                    <thead><tr><th>Table</th><th>Order</th><th>Items</th><th>Status</th></tr></thead>
+                                    <tbody id="live-orders-list"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-success border-start border-4">
+                        <div class="card-header bg-success text-white fw-bold">
+                            <i class="fas fa-file-invoice-dollar me-2"></i> Recent Transactions
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-hover mb-0">
+                                    <thead><tr><th>Bill ID</th><th>Table</th><th>Amount</th><th>Action</th></tr></thead>
+                                    <tbody id="bill-list"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="attendance">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="m-0">🕒 Global Attendance</h3>
+                <div class="d-flex gap-2">
+                    <select id="att-month" class="form-select bg-dark text-white border-secondary" onchange="filterAttendance()">
+                        <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
+                        <option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option>
+                        <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
+                        <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
+                    </select>
+                    <select id="att-year" class="form-select bg-dark text-white border-secondary" onchange="filterAttendance()">
+                        <option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option>
+                    </select>
+                </div>
+            </div>
+            <div class="alert alert-info py-2 mb-3 d-flex justify-content-between align-items-center">
+                <strong id="att-summary-text">Attendance Rate (Selected Month):</strong>
+                <span class="badge bg-success fs-5" id="att-percent">0%</span>
+            </div>
+            <div class="card p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped mb-0 align-middle">
+                        <thead><tr><th>Name</th><th>Date</th><th>Duration</th><th>Status / Mark Present</th></tr></thead>
+                        <tbody id="att-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="menu">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>🍔 Menu Inventory</h3>
+                <span class="badge bg-info fs-5" id="menu-count">0 Items</span>
+            </div>
+
+            <div class="card p-3 mb-3" style="background: #333; border: 1px solid #555;">
+                <h6 class="text-warning mb-2"><i class="fas fa-plus-circle"></i> Quick Add Item</h6>
+                <div class="row g-2">
+                    <div class="col-12 col-md-4">
+                        <input type="text" id="new-name" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Item Name (e.g. Pasta)">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <input type="number" id="new-price" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Price (₹)">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <select id="new-cat" class="form-select form-select-sm bg-dark text-white border-secondary">
+                            <option>Main Course</option>
+                            <option>Starter</option>
+                            <option>Drink</option>
+                            <option>Dessert</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button onclick="addMenuItem()" class="btn btn-warning btn-sm w-100 fw-bold">ADD</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark mb-0 table-hover">
+                        <thead>
+                            <tr class="text-secondary small text-uppercase">
+                                <th>Item Name</th>
+                                <th>Price</th>
+                                <th>Category</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="menu-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="orders">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h3 class="m-0">📜 Master Order Log</h3>
+                <div class="d-flex gap-2 flex-wrap">
+                    <select id="order-filter-status" class="form-select form-select-sm bg-dark text-white border-secondary" style="width:140px;" onchange="filterOrderHistory()">
+                        <option value="all">All Status</option>
+                        <option value="New">New</option>
+                        <option value="Cooking">Cooking</option>
+                        <option value="Ready">Ready</option>
+                        <option value="Billed">Billed</option>
+                        <option value="Reverted">Reverted</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                    <span class="badge bg-secondary align-self-center fs-6" id="order-count-badge">0</span>
+                </div>
+            </div>
+            <div class="card p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle">
+                        <thead>
+                            <tr class="small text-uppercase" style="background:#1c1f26;">
+                                <th>Order ID</th>
+                                <th>Shop</th>
+                                <th>Table</th>
+                                <th>Items</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="order-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Shop Access Mode Tab ── -->
+        <div class="tab-pane fade" id="shopmode-access">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h3 class="m-0 text-warning"><i class="fas fa-briefcase me-2"></i>Shop Access View</h3>
+                <span class="badge bg-warning text-dark">Admin Reading Shop Orders</span>
+            </div>
+            <!-- Status Summary Cards -->
+            <div class="row g-3 mb-4" id="shopmode-summary">
+                <div class="col-6 col-md-3">
+                    <div class="card p-3 text-center border-primary" style="border-left:4px solid #0d6efd!important;">
+                        <div class="fw-bold fs-4" id="sm-count-new" style="color:#4da3ff;">0</div>
+                        <div class="small text-secondary">New Orders</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card p-3 text-center" style="border-left:4px solid #f0a500!important;">
+                        <div class="fw-bold fs-4" id="sm-count-cooking" style="color:#f0a500;">0</div>
+                        <div class="small text-secondary">Cooking</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card p-3 text-center" style="border-left:4px solid #00b849!important;">
+                        <div class="fw-bold fs-4" id="sm-count-ready" style="color:#00b849;">0</div>
+                        <div class="small text-secondary">Ready to Serve 🔔</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card p-3 text-center" style="border-left:4px solid #20c997!important;">
+                        <div class="fw-bold fs-4" id="sm-count-billed" style="color:#20c997;">0</div>
+                        <div class="small text-secondary">Billed Today</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Live Orders Table -->
+            <div class="card p-0 overflow-hidden">
+                <div class="card-header" style="background:#1c1f26;border-bottom:1px solid #2e3240;">
+                    <i class="fas fa-circle text-success me-2" style="font-size:.6rem;"></i>
+                    <strong>Live Order Board</strong>
+                    <span class="badge bg-secondary ms-2" id="sm-live-count">0 active</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 align-middle">
+                        <thead>
+                            <tr class="small text-uppercase" style="background:#111;">
+                                <th>Table</th><th>Order ID</th><th>Items</th><th>Amount</th><th>Status</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shopmode-order-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Cook View Mode Tab ── -->
+        <div class="tab-pane fade" id="shopmode-cook">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h3 class="m-0 text-danger"><i class="fas fa-fire me-2"></i>Cook / Kitchen View</h3>
+                <span class="badge bg-danger">Admin in Kitchen Mode</span>
+            </div>
+            <div class="row" id="admin-kitchen-board">
+                <div class="col-12 text-center p-5 text-secondary">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-3 d-block"></i> Loading kitchen orders...
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Reject User Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-danger">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger"><i class="fas fa-times-circle me-2"></i>Reject User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="reject-user-id">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Reason for Rejection</label>
+                    <textarea id="reject-reason" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="e.g. Invalid documents..."></textarea>
+                </div>
+                <button type="button" class="btn btn-danger w-100 fw-bold" onclick="submitReject()">REJECT ACCOUNT</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Temp Block Modal -->
+<div class="modal fade" id="tempBlockModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-warning">
+            <div class="modal-header border-warning">
+                <h5 class="modal-title text-warning"><i class="fas fa-ban me-2"></i>Temporary Block</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="temp-block-user-id">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Block Duration (Hours)</label>
+                    <input type="number" id="temp-block-hours" class="form-control bg-dark text-white border-secondary" value="24" min="1">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Reason for Block</label>
+                    <textarea id="temp-block-reason" class="form-control bg-dark text-white border-secondary" rows="2" placeholder="e.g. Disciplinary action..."></textarea>
+                </div>
+                <button type="button" class="btn btn-warning w-100 fw-bold" onclick="submitTempBlock()">APPLY TEMP BLOCK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Menu Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-info">
+            <div class="modal-header border-info">
+                <h5 class="modal-title text-info"><i class="fas fa-edit me-2"></i>Edit Menu Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-menu-id">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Item Name</label>
+                    <input type="text" id="edit-menu-name" class="form-control bg-dark text-white border-secondary">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Price (₹)</label>
+                    <input type="number" id="edit-menu-price" class="form-control bg-dark text-white border-secondary">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-secondary small">Category</label>
+                    <select id="edit-menu-category" class="form-select bg-dark text-white border-secondary">
+                        <option>Main Course</option><option>Starter</option>
+                        <option>Drink</option><option>Dessert</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-info w-100 fw-bold" onclick="submitEditMenu()">SAVE CHANGES</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin View/Edit Modal -->
+<div class="modal fade" id="adminViewModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-primary bg-dark text-white">
+            <div class="modal-header border-primary">
+                <h5 class="modal-title text-primary fw-bold"><i class="fas fa-id-card me-2"></i>User Profile (Admin View)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center border-end border-secondary">
+                        <div class="position-relative d-inline-block">
+                            <img id="adminView_pic" src="" onclick="document.getElementById('adminProfilePicInput').click()" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #0d6efd; cursor: pointer;" title="Click to Change Profile Picture">
+                            <input type="file" id="adminProfilePicInput" accept="image/*" class="d-none" onchange="uploadAdminUserProfilePic(this)">
+                        </div>
+                        <h4 class="mt-3 fw-bold text-info" id="adminView_name"></h4>
+                        <span class="badge bg-secondary mb-2" id="adminView_role"></span><br>
+                        <span class="badge bg-primary" id="adminView_custom_id"></span>
+                    </div>
+                    <div class="col-md-8">
+                        <input type="hidden" id="adminView_id">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small">Username</label>
+                                <input type="text" id="adminView_username" class="form-control bg-dark text-info border-secondary">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small">Password</label>
+                                <input type="text" id="adminView_password" class="form-control bg-dark text-warning border-secondary">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small">Mobile</label>
+                                <input type="text" id="adminView_mobile" class="form-control bg-dark text-white border-secondary">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small">Email</label>
+                                <input type="text" id="adminView_email" class="form-control bg-dark text-white border-secondary">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small">Shop ID</label>
+                                <input type="text" id="adminView_shop_id" class="form-control bg-dark text-white border-secondary text-uppercase">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small">Status</label>
+                                <select id="adminView_status" class="form-select bg-dark text-white border-secondary">
+                                    <option value="Active">Active</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="PendingShop">PendingShop</option>
+                                    <option value="Verified">Verified</option>
+                                    <option value="Blocked">Blocked</option>
+                                    <option value="TempBlocked">TempBlocked</option>
+                                    <option value="Rejected">Rejected</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <label class="form-label text-secondary small">Address</label>
+                                <input type="text" id="adminView_address" class="form-control bg-dark text-white border-secondary">
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <label class="form-label text-secondary small text-danger">Shop Remark (Read Only)</label>
+                                <input type="text" id="adminView_shop_remark" class="form-control bg-dark text-light border-secondary" readonly>
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <label class="form-label text-secondary small text-success">Admin Remark (Edit)</label>
+                                <input type="text" id="adminView_admin_remark" class="form-control bg-dark text-white border-secondary">
+                            </div>
+                        </div>
+                        
+                        <hr class="border-secondary my-4">
+                        <h5 class="text-info mb-3"><i class="fas fa-calendar-alt me-2"></i>Attendance Calendar</h5>
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 id="adminView_calMonth" class="m-0 text-white"></h6>
+                            <span id="adminView_calPercent" class="badge bg-success"></span>
+                        </div>
+                        <div id="adminView_calendar" class="d-flex flex-wrap gap-2" style="max-height: 200px; overflow-y: auto;">
+                            <!-- Calendar generated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-primary">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="saveAdminView()"><i class="fas fa-save me-2"></i>SAVE CHANGES</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Create Staff Modal ────────────────────────────────────── -->
+<div class="modal fade" id="createStaffModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white border-info shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold text-info"><i class="fas fa-user-plus me-2"></i>Create New Staff</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="small text-secondary">Full Name</label>
+                        <input type="text" id="new-fullname" class="form-control bg-dark text-white border-secondary">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small text-secondary">Mobile No.</label>
+                        <input type="text" id="new-mobile" class="form-control bg-dark text-white border-secondary">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small text-secondary">Email Address</label>
+                        <input type="email" id="new-email" class="form-control bg-dark text-white border-secondary">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small text-secondary">Address / Location</label>
+                        <input type="text" id="new-address" class="form-control bg-dark text-white border-secondary">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="small text-secondary">Login Username</label>
+                        <input type="text" id="new-username" class="form-control bg-dark text-white border-secondary">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small text-secondary">Login Password</label>
+                        <input type="text" id="new-password" class="form-control bg-dark text-white border-secondary">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small text-secondary">Shop ID (Optional)</label>
+                        <input type="text" id="new-shop-id" class="form-control bg-dark text-white border-secondary text-uppercase" placeholder="KPK-0001">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small text-secondary">Role</label>
+                        <select id="new-role" class="form-select bg-dark text-white border-secondary">
+                            <option>Worker</option><option>Cook</option><option>Cleaner</option><option>Shop</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small text-secondary">Admin Remark</label>
+                        <input type="text" id="new-remark" class="form-control bg-dark text-white border-secondary" placeholder="Optional">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info rounded-pill px-4 fw-bold" onclick="createStaff(); bootstrap.Modal.getInstance(document.getElementById('createStaffModal')).hide();"><i class="fas fa-plus me-2"></i>CREATE USER</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Create Shop Modal ────────────────────────────────────── -->
+<div class="modal fade" id="createShopModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white border-warning shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold text-warning"><i class="fas fa-plus-circle me-2"></i>Create New Shop</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="text-info fw-bold mb-3 border-bottom border-secondary pb-2">1. Shop Details</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4"><label class="small text-secondary">Shop ID</label><input type="text" id="new-shop-id-create" class="form-control bg-dark text-white border-secondary text-uppercase" placeholder="KPK-0001"></div>
+                    <div class="col-md-8"><label class="small text-secondary">Shop Name</label><input type="text" id="new-shop-name" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-8"><label class="small text-secondary">Location / Address</label><input type="text" id="new-shop-address" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-4"><label class="small text-secondary">Shop Phone</label><input type="text" id="new-shop-phone" class="form-control bg-dark text-white border-secondary"></div>
+                </div>
+                
+                <h6 class="text-warning fw-bold mb-3 border-bottom border-secondary pb-2">2. Manager Account Setup</h6>
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="small text-secondary">Manager Name</label><input type="text" id="new-mgr-name" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-6"><label class="small text-secondary">Manager Mobile</label><input type="text" id="new-mgr-mobile" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-6"><label class="small text-secondary">Login Username</label><input type="text" id="new-mgr-user" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-6"><label class="small text-secondary">Login Password</label><input type="text" id="new-mgr-pass" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-12"><label class="small text-secondary">Remark (Optional)</label><input type="text" id="new-mgr-remark" class="form-control bg-dark text-white border-secondary"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning text-dark rounded-pill px-4 fw-bold" onclick="createShop(); bootstrap.Modal.getInstance(document.getElementById('createShopModal')).hide();"><i class="fas fa-store me-2"></i>CREATE SHOP</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Shop View/Edit Modal ────────────────────────────────────── -->
+<div class="modal fade" id="shopViewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark text-white border-info shadow-lg">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold text-info"><i class="fas fa-store me-2"></i>Shop Control Panel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="shopView_id">
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3"><label class="small text-secondary">Shop ID (Fixed)</label><input type="text" id="shopView_shop_id" class="form-control bg-dark text-white border-secondary" readonly></div>
+                    <div class="col-md-5"><label class="small text-info">Shop Name</label><input type="text" id="shopView_name" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-4"><label class="small text-info">Shop Phone</label><input type="text" id="shopView_phone" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-12"><label class="small text-info">Location / Address</label><input type="text" id="shopView_address" class="form-control bg-dark text-white border-secondary"></div>
+                    <div class="col-md-12">
+                        <label class="small text-secondary mb-1">Current Status</label><br>
+                        <span id="shopView_status_badge" class="badge bg-success fs-6">Active</span>
+                    </div>
+                </div>
+                
+                <h6 class="text-warning fw-bold mb-3 border-bottom border-secondary pb-2"><i class="fas fa-users me-2"></i>Assigned Staff & Managers</h6>
+                <div class="table-responsive rounded border border-secondary" style="max-height: 250px;">
+                    <table class="table table-dark table-striped mb-0 text-center">
+                        <thead class="position-sticky top-0 bg-dark" style="z-index: 1;">
+                            <tr>
+                                <th class="text-secondary small">ID</th>
+                                <th class="text-secondary small">Name</th>
+                                <th class="text-secondary small">Role</th>
+                                <th class="text-secondary small">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shopView_staff_list">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary flex-wrap gap-2 justify-content-between">
+                <div>
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="actShopView('delete')"><i class="fas fa-trash me-1"></i> Delete Shop</button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" id="shopView_btn_temp_close" class="btn btn-outline-warning btn-sm rounded-pill px-3" onclick="actShopView('temp_close')"><i class="fas fa-pause-circle me-1"></i> Temp Close</button>
+                    <button type="button" id="shopView_btn_reopen" class="btn btn-outline-success btn-sm rounded-pill px-3 d-none" onclick="actShopView('reopen')"><i class="fas fa-play-circle me-1"></i> Reopen</button>
+                    
+                    <button type="button" class="btn btn-info text-dark btn-sm rounded-pill px-4 fw-bold" onclick="saveShopView()"><i class="fas fa-save me-1"></i> Save Edits</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/admin.js"></script>
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('adminSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('open');
+        overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+    }
+    function closeSidebarMobile() {
+        if (window.innerWidth < 992) {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('open');
+            overlay.style.display = 'none';
+        }
+    }
+</script>
+
+<!-- Change Role Modal -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-info shadow-lg">
+            <div class="modal-header border-info">
+                <h5 class="modal-title text-info fw-bold"><i class="fas fa-user-tag me-2"></i>Change User Role</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="changeRole_user_id">
+                <p class="text-secondary small mb-3">Select the new role for this user. This will update their access permissions immediately.</p>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">New Role</label>
+                    <select id="changeRole_select" class="form-select bg-dark text-white border-secondary fs-5">
+                        <option value="Worker">👷 Worker</option>
+                        <option value="Cook">👨‍🍳 Cook</option>
+                        <option value="Cleaner">🧹 Cleaner</option>
+                        <option value="Shop">🏪 Shop Manager</option>
+                        <option value="Admin">🛡️ Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info text-dark rounded-pill px-4 fw-bold" onclick="submitChangeRole()"><i class="fas fa-save me-2"></i>SAVE ROLE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Order Modal -->
+<div class="modal fade" id="editOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning"><i class="fas fa-edit me-2"></i>Edit Order</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-order-id">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Table Number</label>
+                    <input type="number" id="edit-order-table" class="form-control bg-dark text-white border-secondary">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Total Amount (₹)</label>
+                    <input type="number" id="edit-order-total" class="form-control bg-dark text-white border-secondary">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Status</label>
+                    <select id="edit-order-status" class="form-select bg-dark text-white border-secondary">
+                        <option value="New">New</option>
+                        <option value="Cooking">Cooking</option>
+                        <option value="Ready">Ready</option>
+                        <option value="Billed">Billed</option>
+                        <option value="Reverted">Reverted</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Items (JSON format)</label>
+                    <textarea id="edit-order-items" class="form-control bg-dark text-white border-secondary" rows="4" placeholder='[{"n":"Momo","p":50}]'></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning rounded-pill px-4 text-dark fw-bold" onclick="submitEditOrder()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+

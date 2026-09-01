@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Receipt #<%= order.id %></title>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- HTML2PDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1e293b; /* Dark background to contrast the receipt preview */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .receipt-container {
+            width: 80mm; /* Strict 80mm thermal roll size */
+            background: white;
+            padding: 5mm;
+            box-sizing: border-box;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            color: #000;
+        }
+        .header, .footer { text-align: center; }
+        .header h2 { margin: 0 0 5px 0; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; }
+        .header p { margin: 2px 0; font-size: 0.8rem; }
+        .divider { border-top: 1px dashed #000; margin: 10px 0; }
+        
+        .info { font-size: 0.8rem; margin-bottom: 5px; line-height: 1.4; }
+        .info span { display: block; }
+        
+        table { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-bottom: 5px; }
+        th { text-align: left; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+        th.qty { text-align: center; width: 30px; }
+        th.price, td.price { text-align: right; }
+        td { padding: 4px 0; vertical-align: top; }
+        td.qty { text-align: center; font-weight: bold; }
+        
+        .total-section { margin-top: 5px; font-weight: bold; font-size: 1.1rem; text-align: right; padding-top: 5px; border-top: 1px dashed #000; }
+        
+        .qr-section { display: flex; flex-direction: column; align-items: center; margin-top: 15px; }
+        .qr-section p { font-size: 0.7rem; margin-bottom: 5px; font-weight: bold; }
+        #qrcode { padding: 5px; background: #fff; display: inline-block; }
+        #qrcode img { width: 100px; height: 100px; display: block; }
+
+        .footer { font-size: 0.8rem; margin-top: 15px; }
+        .footer p { margin: 2px 0; font-weight: bold; }
+        .footer small { font-size: 0.65rem; color: #555; }
+
+        /* Action Buttons outside receipt */
+        .action-buttons {
+            display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;
+        }
+        .btn {
+            padding: 12px 20px; font-weight: bold; cursor: pointer; border-radius: 8px; border: none;
+            font-size: 0.9rem; transition: 0.2s; font-family: sans-serif;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn-print { background: #3b82f6; color: white; }
+        .btn-pdf { background: #ef4444; color: white; }
+        .btn-close { background: #64748b; color: white; }
+        .btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        /* Print Specifics */
+        @media print {
+            @page { margin: 0; size: 80mm auto; }
+            body { background: none; padding: 0; align-items: flex-start; justify-content: flex-start; }
+            .receipt-container { box-shadow: none; border-radius: 0; margin: 0; width: 80mm; padding: 5mm; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="receipt-container" id="receipt">
+    <div class="header" style="display: flex; align-items: flex-start; gap: 10px; text-align: left;">
+        <img src="/static/uploads/sg+logo.jpg" alt="Logo" style="width: 45px; height: 45px; border-radius: 6px; object-fit: cover; flex-shrink: 0; margin-top: 2px;">
+        <div>
+            <h2><%= typeof shop !== 'undefined' && shop && shop.name ? shop.name : 'EMPIRE RESTAURANT' %></h2>
+            <p><%= typeof shop !== 'undefined' && shop && shop.address ? shop.address : '123, Food Street, City Center' %></p>
+            <p>Ph: <%= typeof shop !== 'undefined' && shop && shop.phone ? shop.phone : '+91 98765 43210' %></p>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info">
+        <span><strong>Order ID:</strong> #<%= order.id.substring(0,8) %></span>
+        <span><strong>Date:</strong> <%= new Date(order.created_at).toLocaleString() %></span>
+        <span><strong>Table:</strong> <%= order.table_number %></span>
+        <span><strong>Staff ID:</strong> #<%= order.worker_id ? order.worker_id.substring(0,6) : 'N/A' %></span>
+    </div>
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="qty">Qty</th>
+                <th class="price">Amt</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% 
+            let parsedItems = [];
+            try { parsedItems = JSON.parse(order.items); } catch(e) {}
+            parsedItems.forEach(item => { 
+                let qty = item.q || 1;
+            %>
+            <tr>
+                <td><%= item.n || item.name %></td>
+                <td class="qty"><%= qty %></td>
+                <td class="price">₹<%= item.p || item.price %></td>
+            </tr>
+            <% }) %>
+        </tbody>
+    </table>
+
+    <div class="total-section">
+        TOTAL: ₹<%= order.total_amount %>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="qr-section">
+        <p>Scan for full details</p>
+        <div id="qrcode"></div>
+    </div>
+
+    <div class="footer">
+        <p>Thank You! Visit Again.</p>
+        <small>Powered by Empire OS</small>
+    </div>
+</div>
+
+<div class="action-buttons no-print">
+    <button class="btn btn-print" onclick="window.print()">🖨️ Print Receipt</button>
+    <button class="btn btn-pdf" onclick="downloadPDF()">📄 Download PDF</button>
+    <button class="btn btn-close" onclick="window.close()">❌ Close View</button>
+</div>
+
+<script>
+    // Generate QR Code dynamically pointing to current URL
+    window.onload = function() {
+        const qrContainer = document.getElementById('qrcode');
+        new QRCode(qrContainer, {
+            text: window.location.href, // Scanning takes the user directly to this digital bill
+            width: 100,
+            height: 100,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.L
+        });
+        
+        // Auto trigger print dialog after small delay so QR loads
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    };
+
+    function downloadPDF() {
+        const element = document.getElementById('receipt');
+        const opt = {
+            margin:       0,
+            filename:     'Empire_Receipt_<%= order.id.substring(0,8) %>.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
+
+</body>
+</html>
+

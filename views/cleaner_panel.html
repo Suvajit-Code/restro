@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Housekeeping Panel | Empire OS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .att-card {
+            background: white;
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .table-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            border: none;
+        }
+
+        .table-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .bg-Clean {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .bg-Dirty {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .bg-Reserved {
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+            color: black;
+        }
+
+        .navbar {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 575px) {
+            .table-card {
+                height: 130px;
+            }
+
+            .table-card h1 {
+                font-size: 2rem;
+            }
+
+            .table-card h4 {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <%- include('partials/loader.html') %>
+
+        <nav class="navbar navbar-expand-lg navbar-dark bg-info px-3 px-md-4">
+            <span class="navbar-brand fw-bold d-flex align-items-center gap-2">
+                <img src="/uploads/sg+logo.jpg"
+                    style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: white; padding: 1px;"
+                    alt="Logo">
+                HOUSEKEEPING
+            </span>
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <% if (session.role==='Admin' ) { %>
+                    <a href="/admin" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark"><i
+                            class="fas fa-arrow-left me-1"></i> Back to Admin</a>
+                    <% } else if (session.role==='Shop' ) { %>
+                        <a href="/shop" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark"><i
+                                class="fas fa-arrow-left me-1"></i> Back to Shop</a>
+                        <% } %>
+                            <div class="d-flex align-items-center gap-2" style="cursor: pointer;" data-bs-toggle="modal"
+                                data-bs-target="#myProfileModal">
+                                <img src="/static/uploads/<%= session.profile_pic || 'default.jpg' %>"
+                                    style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
+                                <span class="text-white fw-bold d-none d-md-block">
+                                    <%= session.name %>
+                                </span>
+                            </div>
+                            <a href="/logout" class="btn btn-light btn-sm rounded-pill fw-bold text-info">Logout</a>
+            </div>
+        </nav>
+
+        <div class="container mt-4 px-3">
+
+            <div class="card att-card p-3 p-md-4">
+                <div class="row align-items-center g-2">
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <h5 class="mb-1"><i class="fas fa-user-clock text-primary me-2"></i> Shift Status</h5>
+                        <small class="text-muted">Login Time: <span id="login-time" class="fw-bold">Just
+                                Now</span></small>
+                    </div>
+                    <div class="col-md-6 mb-2 mb-md-0">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="fas fa-pen"></i></span>
+                            <input type="text" id="attRemark" class="form-control bg-light border-0"
+                                placeholder="Update Status (e.g. Cleaning Hall 1, On Break)">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button onclick="updateAttendance()" class="btn btn-primary w-100 rounded-pill">Update</button>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="mb-4 text-secondary text-center">Live Table Status</h5>
+            <div class="row g-3" id="tables-container">
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="mt-2 text-muted">Syncing with Restaurant...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            // 1. Load Tables
+            function loadTables() {
+                fetch('/api/tables')
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('tables-container').innerHTML = data.map(t => {
+                            let icon = 'fa-check-circle';
+                            if (t.status === 'Dirty') icon = 'fa-times-circle';
+                            if (t.status === 'Reserved') icon = 'fa-clock';
+                            return `
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="card table-card bg-${t.status} shadow"
+                             onclick="toggleStatus(${t.table_no}, '${t.status}')">
+                            <h1 class="display-5 fw-bold">${t.table_no}</h1>
+                            <h5 class="text-uppercase"><i class="fas ${icon}"></i> ${t.status}</h5>
+                        </div>
+                    </div>`;
+                        }).join('');
+                    })
+                    .catch(err => {
+                        document.getElementById('tables-container').innerHTML =
+                            '<div class="col-12 text-center text-muted py-4">Could not load tables.</div>';
+                    });
+            }
+
+            // 2. Toggle Status
+            function toggleStatus(id, current) {
+                let next = (current === 'Clean') ? 'Dirty' : 'Clean';
+                fetch('/api/clean_table', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, status: next })
+                }).then(() => loadTables());
+            }
+
+            // 3. Attendance Remark
+            function updateAttendance() {
+                let remark = document.getElementById('attRemark').value;
+                if (!remark) return showToast('warning', "Please enter a remark.");
+                fetch('/api/attendance/update', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ remark })
+                }).then(r => r.json()).then(d => {
+                    if (d.status === 'success') showToast('success', "Status Updated!");
+                    else showAlert('error', 'Error', "Error updating: " + (d.message || ''));
+                });
+            }
+
+            document.getElementById('login-time').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            loadTables();
+            try {
+                const socket = io();
+                socket.on('db_changed', () => loadTables());
+            } catch (e) { console.log('Socket.IO not available'); }
+        </script>
+</body>
+
+</html>

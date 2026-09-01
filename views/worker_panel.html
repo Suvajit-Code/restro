@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Worker Panel | Empire OS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Status Badges */
+        .badge-New        { background: #3498db; }
+        .badge-Processing { background: #9b59b6; }
+        .badge-Cooking    { background: #e67e22; animation: blink 1s infinite; }
+        .badge-Ready      { background: #2ecc71; }
+        .badge-Billed     { background: #95a5a6; }
+        @keyframes blink  { 50% { opacity: 0.5; } }
+
+        /* Table Grid */
+        .table-box { transition: 0.3s; border: 2px solid transparent; cursor: pointer; }
+        .table-box:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .border-Clean    { border-color: #2ecc71 !important; background: #eafaf1; color: #27ae60; }
+        .border-Dirty    { border-color: #e74c3c !important; background: #fdedec; color: #c0392b; }
+        .border-Reserved { border-color: #f1c40f !important; background: #fef9e7; color: #d35400; }
+
+        /* Menu */
+        .category-header {
+            background: #e9ecef; color: #495057; padding: 10px 15px;
+            font-weight: bold; text-transform: uppercase; font-size: 0.85rem;
+            position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #dee2e6;
+        }
+        .cart-item { font-size: 0.9rem; border-bottom: 1px dashed #eee; padding: 8px 0; }
+
+        /* Mobile tab scroll */
+        #myTab { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+        #myTab::-webkit-scrollbar { height: 3px; }
+        #myTab::-webkit-scrollbar-thumb { background: #0d6efd; border-radius: 3px; }
+        #myTab .nav-link { white-space: nowrap; }
+
+        /* Stack order layout on mobile */
+        @media (max-width: 767px) {
+            #menu-list { height: 350px !important; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+<%- include('partials/loader.html') %>
+
+<nav class="navbar navbar-dark bg-primary px-3 shadow-sm">
+    <span class="navbar-brand fw-bold d-flex align-items-center gap-2">
+        <img src="/static/uploads/sg+logo.jpg" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: white; padding: 1px;" alt="Logo">
+        WAITER
+    </span>
+    <div class="d-flex align-items-center gap-3">
+        <% if (session.role === 'Admin') { %>
+            <a href="/admin" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark"><i class="fas fa-arrow-left me-1"></i> Back to Admin</a>
+        <% } else if (session.role === 'Shop') { %>
+            <a href="/shop" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark"><i class="fas fa-arrow-left me-1"></i> Back to Shop</a>
+        <% } %>
+        <div class="d-flex align-items-center gap-2" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#myProfileModal">
+            <img src="/static/uploads/<%= session.profile_pic || 'default.jpg' %>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white;">
+            <span class="text-white small d-none d-sm-block fw-bold"><%= session.name %></span>
+        </div>
+        <a href="/logout" class="btn btn-sm btn-light rounded-pill fw-bold text-primary">Logout</a>
+    </div>
+</nav>
+
+<div class="container mt-4 px-3">
+
+    <ul class="nav nav-pills mb-4" id="myTab" role="tablist">
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link active rounded-pill px-3" data-bs-toggle="tab" data-bs-target="#order">
+                <i class="fas fa-utensils me-1"></i> New Order
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill px-3" data-bs-toggle="tab" data-bs-target="#tables" onclick="loadTables()">
+                <i class="fas fa-chair me-1"></i> Tables
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill px-3" data-bs-toggle="tab" data-bs-target="#history" onclick="loadHistory()">
+                <i class="fas fa-clock me-1"></i> History
+            </button>
+        </li>
+        <li class="nav-item flex-shrink-0">
+            <button class="nav-link rounded-pill px-3" data-bs-toggle="tab" data-bs-target="#attendance" onclick="loadAttendance()">
+                <i class="fas fa-id-badge me-1"></i> Attendance
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        
+        <!-- ── NEW ORDER ────────────────────────────────────── -->
+        <div class="tab-pane fade show active" id="order">
+            <div class="row g-4">
+                <!-- Menu Column -->
+                <div class="col-lg-8">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom pt-3">
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                                        <input type="number" id="tableNo" class="form-control" placeholder="Table No">
+                                    </div>
+                                </div>
+                                <div class="col-8">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" id="search" class="form-control" placeholder="Search Items..." onkeyup="filterMenu()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="menu-list" style="height:450px; overflow-y:auto; scroll-behavior: smooth;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cart Column -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-shopping-basket me-2"></i> Order</h5>
+                            <span class="badge bg-danger rounded-pill" id="cart-count">0</span>
+                        </div>
+                        <div class="card-body d-flex flex-column bg-white">
+                            <div id="cart-container" class="flex-grow-1" style="max-height: 300px; overflow-y: auto;">
+                                <ul id="cart-list" class="list-unstyled m-0 p-2">
+                                    <li class="text-center text-muted py-5"><i class="fas fa-carrot fa-2x mb-2"></i><br>Cart is empty</li>
+                                </ul>
+                            </div>
+                            <div class="mt-auto pt-3 border-top">
+                                <div class="d-flex justify-content-between mb-3 align-items-center">
+                                    <span class="h6 m-0 text-secondary">Total:</span>
+                                    <span class="h5 m-0 text-primary fw-bold">₹<span id="total">0</span></span>
+                                </div>
+                                <button onclick="placeOrder()" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm">
+                                    PLACE ORDER <i class="fas fa-paper-plane ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── TABLES ───────────────────────────────────────── -->
+        <div class="tab-pane fade" id="tables">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="text-secondary m-0">Live Table Monitor</h5>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadTables()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            <div class="row g-3" id="tables-container">
+                <div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+
+        <!-- ── HISTORY ──────────────────────────────────────── -->
+        <div class="tab-pane fade" id="history">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold text-secondary">My Recent Orders</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light"><tr><th>ID</th><th>Table</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+                            <tbody id="history-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ATTENDANCE ────────────────────────────────────── -->
+        <div class="tab-pane fade" id="attendance">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold text-secondary">My Attendance Log</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr><th>Date</th><th>Login Time</th><th>Logout Time</th><th>Status</th></tr>
+                            </thead>
+                            <tbody id="att-list">
+                                <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    let cart = [], menu = [];
+
+    // --- 1. LOAD & RENDER MENU ---
+    fetch('/api/menu').then(r => r.json()).then(d => {
+        menu = d;
+        renderCategorizedMenu(d);
+    }).catch(() => {
+        document.getElementById('menu-list').innerHTML = '<div class="p-4 text-muted text-center">Could not load menu.</div>';
+    });
+
+    function renderCategorizedMenu(list) {
+        const container = document.getElementById('menu-list');
+        container.innerHTML = '';
+        const groups = list.reduce((acc, item) => {
+            const cat = item.category || 'Others';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(item);
+            return acc;
+        }, {});
+        const order = ['Main Course', 'Starter', 'Drink', 'Dessert'];
+        const keys = Object.keys(groups).sort((a, b) => {
+            return (order.indexOf(a) !== -1 ? order.indexOf(a) : 99) - (order.indexOf(b) !== -1 ? order.indexOf(b) : 99);
+        });
+        if (keys.length === 0) { container.innerHTML = '<div class="p-5 text-muted text-center">No items found</div>'; return; }
+        keys.forEach(cat => {
+            container.innerHTML += `<div class="category-header">${cat}</div>`;
+            groups[cat].forEach(i => {
+                container.innerHTML += `
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white"
+                     onclick="addToCart('${i.item_name.replace(/'/g,"\\'")}', ${i.price})" style="cursor:pointer">
+                    <span class="fw-bold text-dark">${i.item_name}</span>
+                    <span class="badge bg-light text-dark border">₹${i.price}</span>
+                </div>`;
+            });
+        });
+    }
+
+    function filterMenu() {
+        let q = document.getElementById('search').value.toLowerCase();
+        const filtered = menu.filter(i => i.item_name.toLowerCase().includes(q) || (i.category && i.category.toLowerCase().includes(q)));
+        renderCategorizedMenu(filtered);
+    }
+
+    // --- 2. CART LOGIC ---
+    function addToCart(n, p) {
+        let existing = cart.find(i => i.n === n);
+        if (existing) {
+            existing.q = (existing.q || 1) + 1;
+            existing.p += p;
+            existing.unit_p = p;
+        } else {
+            cart.push({n, p, q: 1, unit_p: p});
+        }
+        updateCart();
+    }
+
+    function updateCart() {
+        const list = document.getElementById('cart-list');
+        const countBadge = document.getElementById('cart-count');
+        const totalItems = cart.reduce((sum, item) => sum + (item.q || 1), 0);
+        countBadge.innerText = totalItems;
+        if(cart.length === 0) {
+            list.innerHTML = '<li class="text-center text-muted py-5"><i class="fas fa-carrot fa-2x mb-2"></i><br>Cart is empty</li>';
+            document.getElementById('total').innerText = 0;
+            return;
+        }
+        list.innerHTML = cart.map((i, index) => `
+            <li class="cart-item d-flex justify-content-between align-items-center">
+                <span>${i.n} ${i.q > 1 ? `<span class="badge bg-secondary ms-1">x${i.q}</span>` : ''}</span>
+                <span>₹${i.p} <i class="fas fa-times text-danger ms-2" style="cursor:pointer" title="Remove" onclick="removeFromCart(${index})"></i></span>
+            </li>`).join('');
+        document.getElementById('total').innerText = cart.reduce((a, b) => a + b.p, 0);
+    }
+
+    function removeFromCart(index) {
+        let item = cart[index];
+        if (item.q && item.q > 1) {
+            item.q -= 1;
+            item.p -= (item.unit_p || (item.p / (item.q + 1)));
+        } else {
+            cart.splice(index, 1);
+        }
+        updateCart();
+    }
+
+    let resubmitOrderId = null;
+
+    function editRevertedOrder(id, tableNo, itemsEnc) {
+        resubmitOrderId = id;
+        document.getElementById('tableNo').value = tableNo;
+        try { cart = JSON.parse(decodeURIComponent(itemsEnc)); } catch(e) { cart = []; }
+        updateCart();
+        
+        // Switch to New Order tab using Bootstrap API
+        const triggerEl = document.querySelector('a[href="#new-order"]');
+        if (triggerEl) {
+            const tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+        }
+        
+        const btn = document.getElementById('placeOrderBtn');
+        if(btn) {
+            btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>RESUBMIT ORDER';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-warning', 'text-dark');
+        }
+    }
+
+    function placeOrder() {
+        const table = document.getElementById('tableNo').value;
+        if(!table) return showToast('warning', "Please enter Table Number!");
+        if(cart.length === 0) return showToast('warning', "Cart is empty!");
+
+        const url = resubmitOrderId ? '/api/order/resubmit' : '/api/place_order';
+        const payload = { table, items: cart, total: document.getElementById('total').innerText };
+        if (resubmitOrderId) {
+            payload.id = resubmitOrderId;
+            payload.table_number = table;
+            payload.total_amount = payload.total;
+        }
+
+        fetch(url, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        }).then(r => r.json()).then(d => {
+            if(d.status === 'success' || d.success) {
+                showToast('success', resubmitOrderId ? "Order Resubmitted!" : "Order Sent to Kitchen!");
+                cart = []; updateCart(); document.getElementById('tableNo').value = '';
+                resubmitOrderId = null;
+                const btn = document.getElementById('placeOrderBtn');
+                if(btn) {
+                    btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>SEND TO KITCHEN';
+                    btn.classList.remove('btn-warning', 'text-dark');
+                    btn.classList.add('btn-primary');
+                }
+                loadHistory();
+            } else {
+                showAlert('error', 'Error', d.error || "Error placing order. Try again.");
+            }
+        }).catch(() => showAlert('error', 'Network Error', "Please try again."));
+    }
+
+    // --- 3. TABLE STATUS ---
+    function loadTables() {
+        fetch('/api/tables').then(r => r.json()).then(data => {
+            document.getElementById('tables-container').innerHTML = data.map(t => {
+                let icon = t.status === 'Clean' ? 'fa-check-circle' : (t.status === 'Reserved' ? 'fa-clock' : 'fa-times-circle');
+                return `
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card table-box shadow-sm border-${t.status} h-100">
+                        <div class="card-body text-center p-3">
+                            <h3 class="fw-bold mb-1">T-${t.table_no}</h3>
+                            <div class="mb-2"><i class="fas ${icon} fa-2x"></i></div>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap mt-2">
+                                <button class="btn btn-sm ${t.status==='Clean'?'btn-success':'btn-outline-success'} p-1" style="font-size:0.75rem;" onclick="setStatus(${t.table_no}, 'Clean')" title="Clean">🟢 Clean</button>
+                                <button class="btn btn-sm ${t.status==='Reserved'?'btn-warning':'btn-outline-warning'} p-1 text-dark" style="font-size:0.75rem;" onclick="setStatus(${t.table_no}, 'Reserved')" title="Reserved">🟡 Rsvd</button>
+                                <button class="btn btn-sm ${t.status==='Dirty'?'btn-danger':'btn-outline-danger'} p-1" style="font-size:0.75rem;" onclick="setStatus(${t.table_no}, 'Dirty')" title="Dirty">🔴 Dirty</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }).catch(() => {
+            document.getElementById('tables-container').innerHTML = '<div class="col-12 text-center text-muted py-4">Could not load tables.</div>';
+        });
+    }
+
+    function setStatus(id, status) {
+        fetch('/api/clean_table', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id, status})
+        }).then(() => loadTables());
+    }
+
+    // --- 4. HISTORY & ATTENDANCE ---
+    function loadHistory() {
+        fetch('/api/worker/history').then(r => r.json()).then(data => {
+            document.getElementById('history-list').innerHTML = data.length === 0
+                ? '<tr><td colspan="5" class="text-center text-muted py-3">No orders yet.</td></tr>'
+                : data.map(o => {
+                    let items = '(no items)';
+                    try { items = JSON.parse(o.items).map(i => i.n).join(', '); } catch(e) {}
+                    const actionBtn = o.status === 'Reverted' 
+                        ? `<br><button class="btn btn-sm btn-outline-warning mt-2 w-100" onclick="editRevertedOrder('${o.id}', '${o.table_number}', '${encodeURIComponent(o.items)}')"><i class="fas fa-edit"></i> Edit & Resubmit</button>` 
+                        : '';
+                    return `<tr>
+                        <td>#${o.id.substring(0,6)}</td>
+                        <td><span class="badge bg-secondary rounded-circle">${o.table_number}</span></td>
+                        <td><small class="text-muted">${items.substring(0,35)}...</small></td>
+                        <td>₹${o.total_amount}</td>
+                        <td>
+                            <span class="badge badge-${o.status}">${o.status}</span>
+                            ${o.revert_reason ? `<br><small class="text-danger mt-1 d-block"><i class="fas fa-info-circle"></i> ${o.revert_reason}</small>` : ''}
+                            ${actionBtn}
+                        </td>
+                    </tr>`;
+                }).join('');
+        }).catch(() => {
+            document.getElementById('history-list').innerHTML = '<tr><td colspan="5" class="text-center text-muted">Error loading history.</td></tr>';
+        });
+    }
+
+    function loadAttendance() {
+        fetch('/api/worker/attendance').then(r => r.json()).then(data => {
+            document.getElementById('att-list').innerHTML = data.length === 0
+                ? '<tr><td colspan="4" class="text-center text-muted py-3">No records yet.</td></tr>'
+                : data.map(a => {
+                    const login = new Date(a.login_time);
+                    const logout = a.logout_time ? new Date(a.logout_time).toLocaleTimeString() : '-';
+                    const status = a.logout_time ? '<span class="badge bg-secondary">Offline</span>' : '<span class="badge bg-success">Online</span>';
+                    return `<tr>
+                        <td>${login.toLocaleDateString()}</td>
+                        <td class="text-success">${login.toLocaleTimeString()}</td>
+                        <td class="text-danger">${logout}</td>
+                        <td>${status}</td>
+                    </tr>`;
+                }).join('');
+        });
+    }
+
+    // Auto Refresh via Socket.IO
+    try {
+        const socket = io();
+        socket.on('db_changed', () => {
+            const tablesTab = document.querySelector('#tables');
+            const historyTab = document.querySelector('#history');
+            if(tablesTab && tablesTab.classList.contains('active')) loadTables();
+            if(historyTab && historyTab.classList.contains('active')) loadHistory();
+        });
+
+        socket.on('staff_called', (data) => {
+            if(data.shopId === '<%= session.shopId %>') {
+                triggerEmergencyCall();
+            }
+        });
+        
+        socket.on('staff_call_stopped', (data) => {
+            if(data.shopId === '<%= session.shopId %>') {
+                if(window.activeEmergencyStop) window.activeEmergencyStop();
+            }
+        });
+    } catch(e) { console.log('Socket.IO not available'); }
+
+    function triggerEmergencyCall() {
+        if(window.activeEmergencyStop) return; // Already alarming
+        
+        const body = document.body;
+        body.style.transition = 'background-color 0.1s';
+        
+        let isRed = false;
+        const blinkInterval = setInterval(() => {
+            body.style.backgroundColor = isRed ? '#0f172a' : '#ef4444';
+            isRed = !isRed;
+        }, 200);
+
+        const playBeep = () => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            } catch(e) {}
+        };
+        
+        playBeep();
+        const beepInterval = setInterval(playBeep, 400);
+
+        const alertBox = document.createElement('div');
+        alertBox.innerHTML = `
+            <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(220,38,38,0.95); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; backdrop-filter: blur(10px);">
+                <i class="fas fa-bullhorn fa-6x mb-4" style="animation: pulse-ring 1s infinite;"></i>
+                <h1 style="font-size: 3rem; font-weight: 900; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">SHOP MANAGER CALLING!</h1>
+                <h3 style="margin-top: 10px; font-weight: 600;">Please report to the main desk immediately.</h3>
+                <button id="dismissCallBtn" class="btn btn-dark btn-lg mt-5 rounded-pill px-5 py-3 fw-bold fs-4 shadow-lg border-2 border-white">ACKNOWLEDGE & CLOSE</button>
+            </div>
+        `;
+        document.body.appendChild(alertBox);
+
+        window.activeEmergencyStop = () => {
+            clearInterval(blinkInterval);
+            clearInterval(beepInterval);
+            body.style.backgroundColor = '';
+            if(alertBox) alertBox.remove();
+            window.activeEmergencyStop = null;
+        };
+
+        document.getElementById('dismissCallBtn').onclick = window.activeEmergencyStop;
+    }
+</script>
+</body>
+</html>
+

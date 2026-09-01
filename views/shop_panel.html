@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Shop Manager | Empire OS</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        body { 
+            background: #0f172a; /* Deep slate background */
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        
+        /* Navbar */
+        .navbar { 
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            position: sticky; top: 0; z-index: 1000;
+        }
+        .navbar-brand { font-weight: 800; letter-spacing: 0.5px; }
+        
+        /* Pills Navigation */
+        .nav-pills { margin-bottom: 25px; gap: 10px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
+        .nav-pills::-webkit-scrollbar { height: 4px; }
+        .nav-pills::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
+        .nav-pills .nav-link { 
+            background: rgba(255,255,255,0.05); color: #cbd5e1; 
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50px; padding: 10px 20px; 
+            font-weight: 600; font-size: 0.9rem; transition: 0.3s;
+            white-space: nowrap;
+        }
+        .nav-pills .nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .nav-pills .nav-link.active { 
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6); 
+            border-color: transparent; color: #fff;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+        }
+        
+        /* Cards */
+        .card { 
+            background: #1e293b; 
+            border: 1px solid rgba(255,255,255,0.08); 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            color: #f1f5f9;
+        }
+        .card-header { border-bottom: 1px solid rgba(255,255,255,0.08); background: transparent; }
+        
+        /* Live Order Cards */
+        .order-card { transition: 0.3s; border-left: 4px solid transparent; }
+        .order-card:hover { transform: translateY(-4px); }
+        .order-new { border-left-color: #f59e0b; background: linear-gradient(to right, rgba(245,158,11,0.05), #1e293b); }
+        .order-reverted { border-left-color: #ef4444; background: linear-gradient(to right, rgba(239,68,68,0.05), #1e293b); }
+        .order-cooking { border-left-color: #3b82f6; background: linear-gradient(to right, rgba(59,130,246,0.05), #1e293b); }
+        .order-ready { border-left-color: #10b981; background: linear-gradient(to right, rgba(16,185,129,0.05), #1e293b); }
+        
+        /* Tables */
+        .table { color: #cbd5e1; margin-bottom: 0; }
+        .table-dark { background: transparent; }
+        .table-hover tbody tr:hover { color: #fff; background-color: rgba(255,255,255,0.03); }
+        .table th { border-bottom-color: rgba(255,255,255,0.08); color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+        .table td { border-bottom-color: rgba(255,255,255,0.05); vertical-align: middle; }
+        
+        /* Inputs */
+        .form-control, .form-select { 
+            background: #0f172a; border: 1.5px solid rgba(255,255,255,0.1); 
+            color: #fff; border-radius: 10px;
+        }
+        .form-control:focus, .form-select:focus { 
+            background: #0f172a; border-color: #38bdf8; color: #fff;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); 
+        }
+        .form-control::placeholder { color: #64748b; }
+        
+        /* Badges */
+        .badge { padding: 6px 10px; font-weight: 600; letter-spacing: 0.5px; border-radius: 8px; }
+        .badge-status-new { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .badge-status-cooking { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .badge-status-ready { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-status-reverted { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        
+        /* Stats */
+        .stat-card { border-radius: 16px; padding: 24px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .stat-card h2 { font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; color: #fff; }
+        .stat-card p { margin: 0; color: rgba(255,255,255,0.8); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-icon { position: absolute; right: 20px; bottom: 10px; font-size: 4.5rem; opacity: 0.2; }
+        
+        /* Modals */
+        .modal-content { 
+            background: #1e293b; border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 16px; color: #f8fafc;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); }
+        .btn-close { filter: invert(1) brightness(0.8); }
+        
+        /* List Group */
+        .list-group-item { background: transparent; border-color: rgba(255,255,255,0.05); color: #cbd5e1; }
+        
+        /* Pulse Animation */
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        .btn-pulse { animation: pulse-ring 2s infinite; }
+    </style>
+</head>
+<body>
+<%- include('partials/loader.html') %>
+<% const jsSafe = (str) => { return (str || '').toString().replace(/'/g, "\\'"); }; %>
+
+<nav class="navbar px-4 py-3">
+    <div class="d-flex align-items-center">
+        <span class="navbar-brand text-white m-0 d-flex align-items-center gap-2">
+            <img src="/static/uploads/sg+logo.jpg" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: white; padding: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" alt="Logo">
+            <span class="d-none d-sm-block">SHOP MANAGER</span>
+        </span>
+        <% if(shopId) { %>
+            <span class="badge ms-3 d-flex align-items-center gap-2" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); font-family: monospace; font-size: 0.95rem;">
+                <i class="fas fa-hashtag"></i> <%= shopId %>
+            </span>
+        <% } %>
+    </div>
+    
+    <div class="ms-auto d-flex align-items-center gap-2 gap-sm-3">
+        <% if (session.role === 'Admin') { %>
+            <a href="/admin" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark"><i class="fas fa-arrow-left me-1"></i> Back to Admin</a>
+        <% } %>
+        <a href="/worker_ui" class="btn btn-success btn-sm rounded-pill fw-bold px-2 px-sm-3 d-flex align-items-center gap-2">
+            <i class="fas fa-utensils"></i> <span class="d-none d-md-inline">Take Order</span>
+        </a>
+        <button id="callStaffBtn" class="btn btn-warning btn-sm rounded-pill fw-bold px-2 px-sm-3 d-flex align-items-center gap-2" style="color: #451a03;" onclick="toggleCallWaiter()">
+            <span id="callStaffIcon"><i class="fas fa-bell"></i></span>
+            <span class="d-none d-md-inline" id="callStaffText">Call Staff</span>
+        </button>
+        <div class="d-flex align-items-center gap-2" style="cursor: pointer; margin-right: 15px;" data-bs-toggle="modal" data-bs-target="#myProfileModal">
+            <img src="/static/uploads/<%= session.profile_pic || 'default.jpg' %>" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8;">
+            <span class="text-white d-none d-sm-block fw-bold" style="font-size: 0.9rem;"><%= session.name %></span>
+        </div>
+        <a href="/logout" class="btn btn-danger btn-sm rounded-pill fw-bold px-3 d-flex align-items-center gap-2">
+            <i class="fas fa-sign-out-alt"></i> <span class="d-none d-sm-inline">Logout</span>
+        </a>
+    </div>
+</nav>
+
+<div class="container-fluid py-4 px-4">
+    <% if(typeof errorMsg!=='undefined' && errorMsg){ %>
+        <div class="alert alert-danger alert-dismissible fade show border-0" style="background: rgba(239,68,68,0.15); color: #fca5a5;">
+            <i class="fas fa-exclamation-triangle me-2"></i> <%= errorMsg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
+
+    <ul class="nav nav-pills" id="shop-tabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#orders">
+                <i class="fas fa-fire me-2"></i>Live Orders 
+                <span class="badge bg-white text-primary ms-2 rounded-pill"><%= orders.filter(o=>['New','Cooking','Ready'].includes(o.status)).length %></span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#bills">
+                <i class="fas fa-file-invoice-dollar me-2"></i>Billing & History
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#menu">
+                <i class="fas fa-book-open me-2"></i>Menu Control
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link position-relative" data-bs-toggle="pill" data-bs-target="#staff" style="padding-right: 25px;">
+                <i class="fas fa-users-cog me-2"></i>Staff Mgmt
+                <% if(pending_staff && pending_staff.length > 0){ %>
+                    <span class="position-absolute bg-danger border border-2 border-dark rounded-circle" style="width: 12px; height: 12px; top: 6px; right: 6px;"></span>
+                <% } %>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#myshop">
+                <i class="fas fa-chart-pie me-2"></i>Dashboard Stats
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- 1. LIVE ORDERS -->
+        <div class="tab-pane fade show active" id="orders">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h4 class="fw-bold m-0 text-white"><i class="fas fa-concierge-bell me-2 text-warning"></i>Kitchen Pipeline</h4>
+            </div>
+            
+            <div class="row g-4">
+                <% const activeOrders = orders.filter(o => ['New', 'Cooking', 'Ready', 'Reverted'].includes(o.status)); %>
+                <% if(activeOrders.length > 0) { 
+                    activeOrders.forEach(o => { 
+                        let cls = 'order-new', badgeCls = 'badge-status-new', icon = 'fa-star';
+                        if(o.status === 'Cooking') { cls = 'order-cooking'; badgeCls = 'badge-status-cooking'; icon = 'fa-fire'; }
+                        if(o.status === 'Ready') { cls = 'order-ready'; badgeCls = 'badge-status-ready'; icon = 'fa-check-circle'; }
+                        if(o.status === 'Reverted') { cls = 'order-reverted'; badgeCls = 'badge-status-reverted'; icon = 'fa-undo'; }
+                %>
+                <div class="col-12 col-md-6 col-xl-4 col-xxl-3">
+                    <div class="card h-100 order-card <%= cls %> p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="fw-bold text-white m-0 mb-1">Table <%= o.table_number %></h5>
+                                <span class="badge bg-dark border border-secondary text-secondary font-monospace">#<%= o.id.substring(0,8) %></span>
+                            </div>
+                            <span class="badge <%= badgeCls %> fs-6"><i class="fas <%= icon %> me-1"></i><%= o.status %></span>
+                        </div>
+                        
+                        <div class="mb-3 p-2 rounded" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); min-height: 80px;">
+                            <p class="m-0 text-light small fw-medium" style="line-height: 1.6;">
+                                <% 
+                                try {
+                                    const items = JSON.parse(o.items);
+                                    if(items.length > 0) {
+                                        items.forEach(i => { %><div class="d-flex justify-content-between"><span><%= i.q %>x <%= i.n %></span><span class="text-secondary">₹<%= i.p %></span></div><% });
+                                    } else { %>No items found.<% }
+                                } catch(e) { %>Error parsing items.<% }
+                                %>
+                            </p>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-end mt-auto pt-2">
+                            <div>
+                                <small class="text-secondary d-block">Total Amount</small>
+                                <span class="fw-bold text-success fs-5">₹<%= o.total_amount %></span>
+                            </div>
+                            
+                            <!-- Action Buttons based on status -->
+                            <div class="d-flex gap-2">
+                                <% if(o.status === 'New') { %>
+                                    <button class="btn btn-outline-danger btn-sm rounded-pill fw-bold" onclick="openRevertModal('<%= o.id %>')">Revert</button>
+                                    <button class="btn btn-primary btn-sm rounded-pill fw-bold" onclick="doAction('approve_order', '<%= o.id %>')">To Kitchen <i class="fas fa-arrow-right ms-1"></i></button>
+                                <% } else if (o.status === 'Ready') { %>
+                                    <button class="btn btn-success btn-sm rounded-pill fw-bold btn-pulse" onclick="openBillModal('<%= o.id %>', '<%= o.total_amount %>', '<%= o.table_number %>')">Generate Bill <i class="fas fa-receipt ms-1"></i></button>
+                                <% } else if (o.status === 'Cooking') { %>
+                                    <span class="badge bg-dark text-secondary border border-secondary p-2"><i class="fas fa-spinner fa-spin me-1"></i> Cooking...</span>
+                                <% } else if (o.status === 'Reverted') { %>
+                                    <span class="badge bg-dark text-danger border border-danger p-2"><i class="fas fa-exclamation-circle me-1"></i> Waiting for Worker</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        
+                        <% if(o.revert_reason && o.status === 'Reverted') { %>
+                            <div class="mt-2 pt-2 border-top border-danger">
+                                <small class="text-danger fw-bold d-block"><i class="fas fa-comment-dots me-1"></i>Revert Reason:</small>
+                                <small class="text-light"><%= o.revert_reason %></small>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+                <% })} else { %>
+                    <div class="col-12">
+                        <div class="card p-5 text-center" style="border: 1px dashed rgba(255,255,255,0.2); background: transparent;">
+                            <div class="display-1 text-secondary mb-3"><i class="fas fa-clipboard-check"></i></div>
+                            <h4 class="text-white">Kitchen is completely clear!</h4>
+                            <p class="text-secondary">Waiting for new orders from workers.</p>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- 2. BILLS & HISTORY -->
+        <div class="tab-pane fade" id="bills">
+            <h4 class="fw-bold m-0 text-white mb-4"><i class="fas fa-file-invoice me-2 text-success"></i>Billing History</h4>
+            <div class="card overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle">
+                        <thead style="background: rgba(0,0,0,0.2);">
+                            <tr><th>Order ID</th><th>Table</th><th>Items Preview</th><th>Total</th><th>Payment</th><th>Date</th><th class="text-end">Print</th></tr>
+                        </thead>
+                        <tbody>
+                            <% const billedOrders = orders.filter(o => o.status === 'Billed').sort((a,b)=>new Date(b.billed_at||b.created_at)-new Date(a.billed_at||a.created_at)); %>
+                            <% if(billedOrders.length === 0) { %>
+                                <tr><td colspan="7" class="text-center py-5 text-secondary">No completed bills found.</td></tr>
+                            <% } %>
+                            <% billedOrders.forEach(o => { %>
+                                <tr>
+                                    <td class="font-monospace text-secondary">#<%= o.id.substring(0,8) %></td>
+                                    <td><span class="badge bg-dark border border-secondary fs-6">T-<%= o.table_number %></span></td>
+                                    <td><small class="text-light"><%= o.items ? JSON.parse(o.items).map(i=>i.n).join(', ').substring(0, 30) + '...' : '' %></small></td>
+                                    <td class="text-success fw-bold fs-6">₹<%= o.total_amount %></td>
+                                    <td>
+                                        <% if(o.payment_mode==='Cash'){ %><span class="badge bg-success-subtle text-success"><i class="fas fa-money-bill-wave me-1"></i>Cash</span><% }
+                                        else if(o.payment_mode==='UPI'){ %><span class="badge bg-primary-subtle text-primary"><i class="fas fa-qrcode me-1"></i>UPI</span><% }
+                                        else if(o.payment_mode==='Card'){ %><span class="badge bg-warning-subtle text-warning"><i class="fas fa-credit-card me-1"></i>Card</span><% }
+                                        else { %><span class="badge bg-secondary">Unknown</span><% } %>
+                                    </td>
+                                    <td class="text-secondary small"><%= o.billed_at ? new Date(o.billed_at).toLocaleString() : new Date(o.created_at).toLocaleString() %></td>
+                                    <td class="text-end"><a href="/view_bill/<%= o.id %>" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3"><i class="fas fa-print me-1"></i> Print</a></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. MENU CONTROL -->
+        <div class="tab-pane fade" id="menu">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card p-4 h-100" style="border-top: 4px solid #38bdf8;">
+                        <h5 class="fw-bold text-white mb-4"><i class="fas fa-plus-circle text-info me-2"></i>Add New Item</h5>
+                        <form action="/api/shop/action" method="POST">
+                            <input type="hidden" name="action" value="add_item">
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small text-uppercase">Item Name</label>
+                                <input type="text" name="name" class="form-control" required placeholder="e.g. Chicken Biryani">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small text-uppercase">Price (₹)</label>
+                                <input type="number" name="price" class="form-control" required placeholder="0.00">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label text-secondary small text-uppercase">Category</label>
+                                <select name="category" class="form-select">
+                                    <option>Main Course</option><option>Starter</option>
+                                    <option>Breads</option><option>Drinks</option><option>Desserts</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-info w-100 fw-bold text-white py-2 rounded-pill shadow">ADD TO MENU</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="card h-100 overflow-hidden">
+                        <div class="card-header d-flex justify-content-between align-items-center py-3 bg-dark">
+                            <h5 class="fw-bold m-0 text-white"><i class="fas fa-utensils text-info me-2"></i>Current Menu</h5>
+                            <span class="badge bg-info text-dark"><%= menu.length %> Items</span>
+                        </div>
+                        <div class="table-responsive" style="max-height: 600px;">
+                            <table class="table table-dark table-hover align-middle mb-0">
+                                <thead style="background: rgba(0,0,0,0.4); position: sticky; top: 0; z-index: 1;">
+                                    <tr><th>Item Name</th><th>Category</th><th>Price</th><th class="text-end">Actions</th></tr>
+                                </thead>
+                                <tbody>
+                                    <% if(menu.length === 0) { %><tr><td colspan="4" class="text-center py-4 text-secondary">Menu is empty.</td></tr><% } %>
+                                    <% menu.forEach(m => { %>
+                                    <tr>
+                                        <td class="fw-bold text-light"><%= m.item_name %></td>
+                                        <td><span class="badge bg-dark border border-secondary text-secondary"><%= m.category %></span></td>
+                                        <td class="text-success fw-bold fs-6">₹<%= m.price %></td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-warning rounded-circle me-1" title="Edit" onclick="openEditItemModal('<%= m.id %>', '<%= m.item_name %>', '<%= m.price %>', '<%= m.category %>')"><i class="fas fa-edit"></i></button>
+                                            <form action="/api/shop/action" method="POST" class="d-inline">
+                                                <input type="hidden" name="action" value="delete_item"><input type="hidden" name="id" value="<%= m.id %>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Delete" onclick="return confirm('Delete <%= m.item_name %>?')"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. STAFF MGMT -->
+        <div class="tab-pane fade" id="staff">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card p-4" style="border-left: 4px solid #8b5cf6;">
+                        <h5 class="fw-bold text-white mb-3"><i class="fas fa-user-plus text-primary me-2"></i>Detailed Staff Onboarding</h5>
+                        <form action="/api/shop/action" method="POST" class="row g-3 align-items-end">
+                            <input type="hidden" name="action" value="create_staff">
+                            <div class="col-md-3">
+                                <label class="form-label text-secondary small text-uppercase">Full Name</label>
+                                <input type="text" name="fullname" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-secondary small text-uppercase">Mobile Number</label>
+                                <input type="text" name="mobile" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-secondary small text-uppercase">Email Address</label>
+                                <input type="email" name="email" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-secondary small text-uppercase">Address / Location</label>
+                                <input type="text" name="address" class="form-control">
+                            </div>
+                            
+                            <div class="col-md-3 mt-3">
+                                <label class="form-label text-secondary small text-uppercase">Login Username</label>
+                                <input type="text" name="username" class="form-control" required>
+                            </div>
+                            <div class="col-md-2 mt-3">
+                                <label class="form-label text-secondary small text-uppercase">Login Password</label>
+                                <input type="text" name="password" class="form-control" required>
+                            </div>
+                            <div class="col-md-2 mt-3">
+                                <label class="form-label text-secondary small text-uppercase">Role</label>
+                                <select name="role" class="form-select" required>
+                                    <option value="Worker">Worker</option><option value="Cook">Cook</option><option value="Cleaner">Cleaner</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mt-3">
+                                <label class="form-label text-secondary small text-uppercase">Remark (Optional)</label>
+                                <input type="text" name="remark" class="form-control" placeholder="e.g. Morning Shift">
+                            </div>
+                            <div class="col-md-2 mt-3">
+                                <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill shadow" style="padding: 10px;">ADD STAFF</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <div class="card h-100 overflow-hidden" style="border-top: 4px solid #f59e0b;">
+                        <div class="card-header bg-dark d-flex justify-content-between align-items-center py-3">
+                            <h5 class="fw-bold m-0 text-white"><i class="fas fa-clock text-warning me-2"></i>Pending Verifications</h5>
+                            <span class="badge bg-warning text-dark"><%= pending_staff.length %> Pending</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover align-middle mb-0">
+                                <thead style="background: rgba(0,0,0,0.4);"><tr><th>Applicant</th><th>Role</th><th>Details</th><th class="text-end">Actions</th></tr></thead>
+                                <tbody>
+                                    <% if(pending_staff.length === 0) { %><tr><td colspan="4" class="text-center py-5 text-secondary">No pending registrations.</td></tr><% } %>
+                                    <% pending_staff.forEach(p => { %>
+                                    <%
+                                        const pName = p.full_name || p.username;
+                                        const pPic = p.profile_pic || 'default.jpg';
+                                        const pAddr = p.address || 'N/A';
+                                        const pEmail = p.email || 'N/A';
+                                        const pMob = p.mobile || 'N/A';
+                                    %>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <img src="/static/uploads/<%= pPic %>" onclick="openImageModal(this.src)" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8; cursor: pointer;" title="Click to view full image">
+                                                <div>
+                                                    <div class="fw-bold text-light"><%= pName %></div>
+                                                    <div class="small text-secondary">@<%= p.username %></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge bg-dark border border-secondary text-light"><%= p.role %></span></td>
+                                        <td class="text-secondary small">
+                                            <div><i class="fas fa-map-marker-alt"></i> <%= pAddr %></div>
+                                            <div><i class="fas fa-envelope"></i> <%= pEmail %></div>
+                                            <div><i class="fas fa-phone"></i> <%= pMob %></div>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <button class="btn btn-sm btn-info rounded-pill fw-bold text-dark px-3" title="Verify Details" onclick="openVerifyModal('<%= p.id %>', '<%= jsSafe(pName) %>', '<%= jsSafe(p.role) %>', '<%= jsSafe(pAddr) %>', '<%= jsSafe(pEmail) %>', '<%= jsSafe(pMob) %>', '<%= jsSafe(pPic) %>')"><i class="fas fa-eye me-1"></i> Verify</button>
+                                            <form id="rej-<%= p.id %>" action="/api/shop/action" method="POST" class="d-inline">
+                                                <input type="hidden" name="id" value="<%= p.id %>">
+                                                <button name="action" value="reject_user" class="btn btn-sm btn-outline-danger rounded-circle ms-1" title="Reject"><i class="fas fa-times"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-5">
+                    <div class="card h-100 overflow-hidden" style="border-top: 4px solid #10b981;">
+                        <div class="card-header bg-dark d-flex justify-content-between align-items-center py-3">
+                            <h5 class="fw-bold m-0 text-white"><i class="fas fa-users text-success me-2"></i>Active Team</h5>
+                            <span class="badge bg-success"><%= staff.length %> Active</span>
+                        </div>
+                        <ul class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
+                            <% if(staff.length === 0) { %><li class="list-group-item text-center py-4 text-secondary">No active staff found.</li><% } %>
+                            <% staff.forEach(s => { 
+                                const sName = s.full_name || s.username;
+                                const sPic = s.profile_pic || 'default.jpg';
+                            %>
+                            <li class="list-group-item d-flex align-items-center justify-content-between py-3 border-bottom border-dark">
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="/static/uploads/<%= sPic %>" onclick="openImageModal(this.src)" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #10b981; cursor: pointer;" title="Click to view full image">
+                                    <div>
+                                        <h6 class="fw-bold text-light mb-1"><%= sName %></h6>
+                                        <div class="d-flex gap-2">
+                                            <span class="badge bg-dark text-secondary border border-secondary"><%= s.role %></span>
+                                            <span class="badge bg-dark text-success border border-success"><i class="fas fa-circle" style="font-size: 8px;"></i> Active</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-info btn-sm rounded-circle" title="View Staff" onclick="openShopViewModal('<%= s.id %>', '<%= jsSafe(sName) %>', '<%= jsSafe(s.role) %>', '<%= jsSafe(sPic) %>')"><i class="fas fa-eye"></i></button>
+                                    <button class="btn btn-outline-danger btn-sm rounded-circle" title="Block Staff" onclick="openShopBlockModal('<%= s.id %>')"><i class="fas fa-ban"></i></button>
+                                </div>
+                            </li>
+                            <% }) %>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. DASHBOARD STATS -->
+        <div class="tab-pane fade" id="myshop">
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+                        <i class="fas fa-shopping-bag stat-icon text-white"></i>
+                        <h2><%= orders.length %></h2>
+                        <p>Total Orders</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #064e3b, #10b981);">
+                        <i class="fas fa-rupee-sign stat-icon text-white"></i>
+                        <h2>₹<%= billedOrders.reduce((sum, o) => sum + Number(o.total_amount||0), 0) %></h2>
+                        <p>Revenue Generated</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #7c2d12, #f59e0b);">
+                        <i class="fas fa-fire stat-icon text-white"></i>
+                        <h2><%= activeOrders.length %></h2>
+                        <p>Active Kitchen Pipeline</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #4c1d95, #8b5cf6);">
+                        <i class="fas fa-users stat-icon text-white"></i>
+                        <h2><%= staff.length %></h2>
+                        <p>Active Team Members</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6 mt-4">
+                    <div class="card p-0 overflow-hidden h-100">
+                        <div class="card-header bg-dark py-3"><h5 class="fw-bold m-0 text-white"><i class="fas fa-store me-2 text-info"></i>Shop Information</h5></div>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex justify-content-between align-items-center p-4">
+                                <div><small class="text-secondary d-block text-uppercase fw-bold mb-1">Shop ID / Access Code</small><h4 class="text-info fw-bold m-0"><%= shopId || 'Not Assigned' %></h4></div>
+                                <i class="fas fa-fingerprint fa-2x text-secondary opacity-50"></i>
+                            </div>
+                            <div class="list-group-item p-4">
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <small class="text-secondary d-block mb-1">Shop Name</small>
+                                        <strong class="text-light fs-5"><%= shopInfo ? shopInfo.name : 'Unknown' %></strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-secondary d-block mb-1">Status</small>
+                                        <span class="badge bg-success fs-6 px-3">Active</span>
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <small class="text-secondary d-block mb-1"><i class="fas fa-map-marker-alt me-1"></i> Location / Address</small>
+                                        <div class="text-light"><%= shopInfo && shopInfo.address ? shopInfo.address : 'Not configured' %></div>
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <small class="text-secondary d-block mb-1"><i class="fas fa-phone me-1"></i> Contact Number</small>
+                                        <div class="text-light"><%= shopInfo && shopInfo.phone ? shopInfo.phone : 'Not configured' %></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+
+<!-- Revert Order Modal -->
+<div class="modal fade" id="revertModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger fw-bold"><i class="fas fa-undo me-2"></i>Revert Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-light">Please specify the reason for reverting this order back to the worker (e.g., items out of stock, clarification needed).</p>
+                <input type="hidden" id="revert_order_id">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Reason for Revert</label>
+                    <textarea id="revert_reason" class="form-control" rows="3" placeholder="Type reason here..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="submitRevert()">Confirm Revert</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Bill Modal -->
+<div class="modal fade" id="billModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-success">
+                <h5 class="modal-title text-success fw-bold"><i class="fas fa-receipt me-2"></i>Generate Final Bill</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="display-4 text-white fw-bold mb-2" id="bill_total_display">₹0</div>
+                <p class="text-secondary mb-4">Total Amount for Table <span id="bill_table_display" class="fw-bold text-light"></span></p>
+                
+                <input type="hidden" id="bill_order_id">
+                <div class="text-start mb-2">
+                    <label class="form-label text-secondary small">Select Payment Mode</label>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-4">
+                        <input type="radio" class="btn-check" name="paymentMode" id="payCash" value="Cash" checked>
+                        <label class="btn btn-outline-success w-100 p-3 rounded" for="payCash">
+                            <i class="fas fa-money-bill-wave d-block mb-1 fs-4"></i>Cash
+                        </label>
+                    </div>
+                    <div class="col-4">
+                        <input type="radio" class="btn-check" name="paymentMode" id="payUPI" value="UPI">
+                        <label class="btn btn-outline-primary w-100 p-3 rounded" for="payUPI">
+                            <i class="fas fa-qrcode d-block mb-1 fs-4"></i>UPI
+                        </label>
+                    </div>
+                    <div class="col-4">
+                        <input type="radio" class="btn-check" name="paymentMode" id="payCard" value="Card">
+                        <label class="btn btn-outline-warning w-100 p-3 rounded" for="payCard">
+                            <i class="fas fa-credit-card d-block mb-1 fs-4"></i>Card
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-bold w-50" onclick="submitBill()">Confirm & Bill</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Menu Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-warning"><i class="fas fa-edit me-2"></i>Edit Menu Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editItemForm">
+                    <input type="hidden" id="edit_item_id">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Item Name</label>
+                        <input type="text" id="edit_item_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Price (₹)</label>
+                        <input type="number" id="edit_item_price" class="form-control" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary small">Category</label>
+                        <select id="edit_item_category" class="form-select">
+                            <option>Main Course</option><option>Starter</option>
+                            <option>Breads</option><option>Drinks</option><option>Desserts</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-warning w-100 fw-bold rounded-pill text-dark" onclick="submitEditItem()">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Shop Verify Staff Modal -->
+<div class="modal fade" id="shopVerifyModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-info">
+            <div class="modal-header border-info">
+                <h5 class="modal-title text-info fw-bold"><i class="fas fa-user-check me-2"></i>Verify & Forward Staff</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="verify_pic" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #0dcaf0;">
+                    <h5 class="mt-2 text-white fw-bold mb-0" id="verify_name"></h5>
+                    <span class="badge bg-dark border border-secondary text-info mt-1" id="verify_role"></span>
+                </div>
+                
+                <div class="card bg-dark border-secondary p-3 mb-3">
+                    <div class="small text-secondary mb-1"><i class="fas fa-envelope text-info me-2"></i> <span id="verify_email" class="text-light"></span></div>
+                    <div class="small text-secondary mb-1"><i class="fas fa-phone text-success me-2"></i> <span id="verify_mobile" class="text-light"></span></div>
+                    <div class="small text-secondary"><i class="fas fa-map-marker-alt text-danger me-2"></i> <span id="verify_address" class="text-light"></span></div>
+                </div>
+
+                <form id="verifyForm" action="/api/shop/action" method="POST">
+                    <input type="hidden" name="action" value="verify_forward">
+                    <input type="hidden" name="id" id="verify_staff_id">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Verification Remark (Required)</label>
+                        <textarea name="remark" class="form-control" rows="2" placeholder="e.g. Identity verified, safe to approve" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-info w-100 fw-bold rounded-pill shadow text-dark">FORWARD TO ADMIN <i class="fas fa-arrow-right ms-1"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Shop Block Staff Modal -->
+<div class="modal fade" id="shopBlockModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger fw-bold"><i class="fas fa-ban me-2"></i>Block Staff Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-light">Blocking this staff member will immediately revoke their access and forward the request to the Admin for final approval.</p>
+                <input type="hidden" id="block_staff_id">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Reason for Blocking</label>
+                    <textarea id="block_staff_reason" class="form-control" rows="3" placeholder="Explain why..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="submitShopBlock()">Request Block</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- Shop View Modal -->
+<div class="modal fade" id="shopViewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-info bg-dark text-white">
+            <div class="modal-header border-info">
+                <h5 class="modal-title text-info fw-bold"><i class="fas fa-id-card me-2"></i>Staff Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center border-end border-secondary">
+                        <img id="shopView_pic" src="" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #0dcaf0;">
+                        <h4 class="mt-3 fw-bold text-info" id="shopView_name"></h4>
+                        <span class="badge bg-secondary mb-2" id="shopView_role"></span><br>
+                    </div>
+                    <div class="col-md-8">
+                        <h5 class="text-info mb-3"><i class="fas fa-calendar-alt me-2"></i>Attendance Calendar</h5>
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 id="shopView_calMonth" class="m-0 text-white"></h6>
+                            <span id="shopView_calPercent" class="badge bg-success"></span>
+                        </div>
+                        <div id="shopView_calendar" class="d-flex flex-wrap gap-2" style="max-height: 250px; overflow-y: auto;">
+                            <!-- Calendar generated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script type="application/json" id="attendanceData">
+    <%- JSON.stringify(attendance || []) %>
+</script>
+<script type="application/json" id="shopIdData">
+    <%- JSON.stringify(shopId || '') %>
+</script>
+<script>
+    window.allAttendance = JSON.parse(document.getElementById('attendanceData').textContent);
+    
+    let shopViewModalIns;
+    function openShopViewModal(id, name, role, pic) {
+        document.getElementById('shopView_pic').src = '/static/uploads/' + pic;
+        document.getElementById('shopView_name').innerText = name;
+        document.getElementById('shopView_role').innerText = role;
+        
+        // Build Calendar View
+        const cal = document.getElementById('shopView_calendar');
+        const monthTxt = document.getElementById('shopView_calMonth');
+        const percTxt = document.getElementById('shopView_calPercent');
+        
+        const now = new Date();
+        const y = now.getFullYear(), m = now.getMonth();
+        monthTxt.innerText = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+        
+        const userAtt = window.allAttendance.filter(a => a.user_id === id);
+        const thisMonthAtt = userAtt.filter(a => {
+            if(!a.login_time) return false;
+            const d = new Date(a.login_time);
+            return d.getFullYear() === y && d.getMonth() === m;
+        });
+        
+        let pCount = 0;
+        let html = '';
+        const totalDays = new Date(y, m+1, 0).getDate();
+        
+        for(let day = 1; day <= totalDays; day++) {
+            const record = thisMonthAtt.find(a => new Date(a.login_time).getDate() === day);
+            let bg = 'bg-secondary';
+            let mark = 'Absent';
+            let login = '-', logout = '-';
+            let style = '';
+            
+            if(record) {
+                login = new Date(record.login_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                if(record.logout_time) logout = new Date(record.logout_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                const rm = (record.remark || '').toLowerCase();
+                if(rm.includes('half')) { bg = 'bg-warning text-dark'; mark = 'Half Day'; pCount += 0.5; }
+                else if(rm.includes('emergency')) { bg = 'text-white'; mark = 'Emergency Exit'; style='background-color: #ec4899;'; }
+                else if(rm.includes('absent')) { bg = 'bg-danger text-white'; mark = 'Absent'; }
+                else { bg = 'bg-success text-white'; mark = 'Present'; pCount += 1; }
+            } else if (day > now.getDate()) {
+                bg = 'bg-dark border border-secondary text-white'; mark = '—';
+            } else {
+                bg = 'bg-danger text-white'; mark = 'Absent';
+            }
+            
+            html += `
+            <div class="card ${bg} text-center p-1" style="width: 80px; font-size: 0.7rem; border-radius: 8px; ${style}">
+                <div class="fw-bold fs-6">${day}</div>
+                <div style="font-size: 0.6rem; text-transform: uppercase;">${mark}</div>
+                <div style="font-size: 0.55rem; margin-top:2px;">IN: ${login}</div>
+                <div style="font-size: 0.55rem;">OUT: ${logout}</div>
+            </div>`;
+        }
+        
+        cal.innerHTML = html;
+        const rate = Math.round((pCount / now.getDate()) * 100);
+        percTxt.innerText = (rate > 100 ? 100 : rate) + '% Rate';
+        
+        if(!shopViewModalIns) shopViewModalIns = new bootstrap.Modal(document.getElementById('shopViewModal'));
+        shopViewModalIns.show();
+    }
+    function openImageModal(src) {
+        let modal = document.getElementById('globalImageModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'globalImageModal';
+            modal.innerHTML = `
+                <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:999999; display:flex; justify-content:center; align-items:center; backdrop-filter: blur(5px);" onclick="this.style.display='none'">
+                    <span style="position:absolute; top:20px; right:40px; color:white; font-size:50px; font-weight:bold; cursor:pointer;">&times;</span>
+                    <img id="globalImageModalImg" src="" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 15px 50px rgba(0,0,0,0.5); object-fit:contain; border:3px solid #38bdf8;" onclick="event.stopPropagation()">
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('globalImageModalImg').src = src;
+        modal.style.display = 'flex';
+    }
+
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+    });
+
+    function showToast(icon, title) {
+        Toast.fire({ icon, title });
+    }
+
+    function showAlert(icon, title, text) {
+        Swal.fire({ icon, title, text, background: '#1e293b', color: '#f8fafc' });
+    }
+
+    // AJAX Action Wrapper
+    function doAction(action, id, extraData = {}) {
+        fetch('/api/shop/action/api', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, id, ...extraData })
+        }).then(r=>r.json()).then(d => {
+            if(d.success) {
+                showToast('success', 'Action completed successfully!');
+                // realtime.js will handle the DOM update via db_changed socket event
+            } else {
+                showAlert('error', 'Action Failed', d.error);
+            }
+        }).catch(() => showAlert('error', 'Network Error', 'Please try again later.'));
+    }
+
+    // Revert Modal Logic
+    let revertModal;
+    function openRevertModal(id) {
+        document.getElementById('revert_order_id').value = id;
+        document.getElementById('revert_reason').value = '';
+        if(!revertModal) revertModal = new bootstrap.Modal(document.getElementById('revertModal'));
+        revertModal.show();
+    }
+    function submitRevert() {
+        const id = document.getElementById('revert_order_id').value;
+        const reason = document.getElementById('revert_reason').value.trim();
+        if(!reason) return showToast('warning', 'Please provide a reason for reverting.');
+        doAction('revert_order', id, { remark: reason });
+    }
+
+    // Bill Modal Logic
+    let billModal;
+    function openBillModal(id, total, table) {
+        document.getElementById('bill_order_id').value = id;
+        document.getElementById('bill_total_display').innerText = '₹' + total;
+        document.getElementById('bill_table_display').innerText = table;
+        document.getElementById('payCash').checked = true; // reset to default
+        if(!billModal) billModal = new bootstrap.Modal(document.getElementById('billModal'));
+        billModal.show();
+    }
+    function submitBill() {
+        const id = document.getElementById('bill_order_id').value;
+        const mode = document.querySelector('input[name="paymentMode"]:checked').value;
+        fetch('/api/shop/action/api', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'generate_bill', id, payment_mode: mode })
+        }).then(r=>r.json()).then(d => {
+            if(d.success) {
+                // Open bill in new tab automatically, then reload current
+                window.open('/view_bill/' + id, '_blank');
+                window.location.reload();
+            }
+            else showAlert('error', 'Error', d.error);
+        });
+    }
+
+    // Edit Item Modal Logic
+    let editModal;
+    function openEditItemModal(id, name, price, cat) {
+        document.getElementById('edit_item_id').value = id;
+        document.getElementById('edit_item_name').value = name;
+        document.getElementById('edit_item_price').value = price;
+        document.getElementById('edit_item_category').value = cat;
+        if(!editModal) editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+        editModal.show();
+    }
+    function submitEditItem() {
+        const id = document.getElementById('edit_item_id').value;
+        const name = document.getElementById('edit_item_name').value;
+        const price = document.getElementById('edit_item_price').value;
+        const cat = document.getElementById('edit_item_category').value;
+        if(!name || !price) return showToast('warning', 'Fill name and price');
+        doAction('edit_item', id, { name, price, category: cat });
+    }
+
+    // Shop Verify Staff Modal Logic
+    let verifyModal;
+    function openVerifyModal(id, name, role, address, email, mobile, pic) {
+        document.getElementById('verify_staff_id').value = id;
+        document.getElementById('verify_name').innerText = name;
+        document.getElementById('verify_role').innerText = role;
+        document.getElementById('verify_address').innerText = address;
+        document.getElementById('verify_email').innerText = email;
+        document.getElementById('verify_mobile').innerText = mobile;
+        document.getElementById('verify_pic').src = '/static/uploads/' + pic;
+        
+        if(!verifyModal) verifyModal = new bootstrap.Modal(document.getElementById('shopVerifyModal'));
+        verifyModal.show();
+    }
+
+    // Shop Block Logic
+    let shopBlockModal;
+    function openShopBlockModal(id) {
+        document.getElementById('block_staff_id').value = id;
+        document.getElementById('block_staff_reason').value = '';
+        if(!shopBlockModal) shopBlockModal = new bootstrap.Modal(document.getElementById('shopBlockModal'));
+        shopBlockModal.show();
+    }
+    function submitShopBlock() {
+        const id = document.getElementById('block_staff_id').value;
+        const reason = document.getElementById('block_staff_reason').value.trim();
+        if(!reason) return showToast('warning', 'Please provide a reason for blocking.');
+        doAction('block_user', id, { remark: reason });
+    }
+
+    let isCalling = false;
+    function toggleCallWaiter() {
+        const btn = document.getElementById('callStaffBtn');
+        const txt = document.getElementById('callStaffText');
+        const icon = document.getElementById('callStaffIcon');
+        
+        if(!isCalling) {
+            Swal.fire({
+                title: 'Alert Staff?',
+                text: 'This will trigger an emergency siren on all active staff screens.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Alert Them!',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    isCalling = true;
+                    btn.classList.remove('btn-warning');
+                    btn.classList.add('btn-danger');
+                    btn.style.color = '#fff';
+                    txt.innerText = 'Stop Call';
+                    icon.innerHTML = '<i class="fas fa-stop-circle"></i>';
+                    
+                    try {
+                        const sid = document.getElementById('shopIdData').textContent.trim();
+                        if(globalSocket) globalSocket.emit('call_staff', { shopId: JSON.parse(sid) });
+                    } catch(e) { console.log('Socket failed', e); }
+                    
+                    showToast('success', 'Staff Alert Triggered!');
+                }
+            });
+        } else {
+            Swal.fire({
+                title: 'Stop Alert?',
+                text: 'This will dismiss the siren on all staff screens.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Stop It',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    isCalling = false;
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-warning');
+                    btn.style.color = '#451a03';
+                    txt.innerText = 'Call Staff';
+                    icon.innerHTML = '<i class="fas fa-bell"></i>';
+                    
+                    try {
+                        const sid = document.getElementById('shopIdData').textContent.trim();
+                        if(globalSocket) globalSocket.emit('stop_call_staff', { shopId: JSON.parse(sid) });
+                    } catch(e) { console.log('Socket failed', e); }
+                    
+                    showToast('info', 'Staff Alert Stopped.');
+                }
+            });
+        }
+    }
+</script>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/realtime.js"></script>
+<script>
+    let globalSocket = null;
+    try {
+        globalSocket = socket; // Use socket from realtime.js
+    } catch(e) { console.log('Socket.IO not available'); }
+</script>
+</body>
+</html>
+

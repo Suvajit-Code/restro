@@ -1,0 +1,189 @@
+<!-- Global Dotted Loader & SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    #globalLoader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #0f172a;
+        z-index: 9999999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+    }
+
+    .dotted-spinner {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        border: 6px dotted #0dcaf0;
+        animation: spin 2s linear infinite;
+        margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+<div id="globalLoader">
+    <div class="dotted-spinner"></div>
+    <h3 class="text-white fw-bold" style="letter-spacing: 2px;">Please Wait</h3>
+    <p class="text-secondary small">Loading system data...</p>
+</div>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const loader = document.getElementById('globalLoader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.visibility = 'hidden'; loader.style.display = 'none'; }, 150);
+        }
+    });
+
+    // Global Alert Wrapper (SweetAlert2)
+    window.showAlert = function (type, title, text) {
+        Swal.fire({
+            icon: type,
+            title: title,
+            text: text,
+            background: '#1e293b',
+            color: '#fff',
+            confirmButtonColor: '#38bdf8',
+            customClass: { popup: 'rounded-4 border border-secondary' }
+        });
+    };
+
+    // Global Toast Wrapper mapped to center alert as requested
+    window.showToast = function (type, title) {
+        Swal.fire({
+            icon: type,
+            title: title,
+            background: '#1e293b',
+            color: '#fff',
+            confirmButtonColor: '#38bdf8',
+            confirmButtonText: 'OK',
+            customClass: { popup: 'rounded-4 border border-secondary' }
+        });
+    };
+
+    // Intercept all logout links globally to show confirmation
+    window.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('a[href="/logout"]').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const href = this.getAttribute('href');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'You will be logged out of your session.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Logout',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true,
+                    background: '#1e293b',
+                    color: '#fff',
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.replace(href);
+                    }
+                });
+            });
+        });
+    });
+
+    // Global Image Modal (if not exists)
+    window.openImageModal = function(src) {
+        let modal = document.getElementById('globalImageModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'globalImageModal';
+            modal.innerHTML = `
+                <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:999999; display:flex; justify-content:center; align-items:center; backdrop-filter: blur(5px);" onclick="this.style.display='none'">
+                    <span style="position:absolute; top:20px; right:40px; color:white; font-size:50px; font-weight:bold; cursor:pointer;">&times;</span>
+                    <img id="globalImageModalImg" src="" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 15px 50px rgba(0,0,0,0.5); object-fit:contain; border:3px solid #38bdf8;" onclick="event.stopPropagation()">
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('globalImageModalImg').src = src;
+        modal.style.display = 'flex';
+    };
+</script>
+
+<!-- Global My Profile Modal -->
+<% if (typeof session !== 'undefined' && session.userId) { %>
+<div class="modal fade" id="myProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: #f8fafc; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <h5 class="modal-title fw-bold" style="color: #38bdf8;"><i class="fas fa-id-badge me-2"></i>My Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="position-relative d-inline-block">
+                    <img id="myProfilePicPreview" src="/static/uploads/<%= session.profile_pic || 'default.jpg' %>" 
+                         onclick="openImageModal(this.src)"
+                         style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #38bdf8; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3);" 
+                         title="Click to view full image">
+                    <label for="profilePicInput" class="position-absolute" style="bottom: 0; right: 0; background: #38bdf8; color: #fff; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 2px solid #1e293b;" title="Change Profile Picture">
+                        <i class="fas fa-camera"></i>
+                    </label>
+                    <input type="file" id="profilePicInput" accept="image/*" class="d-none" onchange="uploadNewProfilePic(this)">
+                </div>
+                <h4 class="mt-3 fw-bold text-white"><%= session.name %></h4>
+                
+                <script>
+                    async function uploadNewProfilePic(input) {
+                        if (!input.files || !input.files[0]) return;
+                        const file = input.files[0];
+                        const formData = new FormData();
+                        formData.append('profile_pic', file);
+                        
+                        try {
+                            const loader = document.getElementById('globalLoader');
+                            if (loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+                            
+                            const res = await fetch('/api/update_profile_pic', { method: 'POST', body: formData });
+                            const data = await res.json();
+                            
+                            if (loader) { loader.style.opacity = '0'; setTimeout(() => { loader.style.display = 'none'; }, 200); }
+                            
+                            if (data.success) {
+                                document.getElementById('myProfilePicPreview').src = '/static/uploads/' + data.filename;
+                                showToast('success', 'Profile picture updated!');
+                                setTimeout(() => window.location.reload(), 1500);
+                            } else {
+                                showAlert('error', 'Update Failed', data.message);
+                            }
+                        } catch (err) {
+                            showAlert('error', 'Error', 'Failed to upload image.');
+                        }
+                    }
+                </script>
+                <div class="mb-3">
+                    <span class="badge bg-primary fs-6"><%= session.role %></span>
+                    <% if (session.shopId) { %><span class="badge bg-secondary fs-6 ms-1">Shop: <%= session.shopId %></span><% } %>
+                    <% if (session.custom_id) { %><span class="badge bg-dark border border-secondary fs-6 ms-1"><%= session.custom_id %></span><% } %>
+                </div>
+                
+                <div class="card p-3 text-start mt-4" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
+                    <div class="mb-2"><small class="text-secondary d-block text-uppercase" style="font-size:0.7rem;letter-spacing:1px;">Mobile Number</small><span class="text-light fw-medium"><i class="fas fa-phone text-success me-2"></i><%= session.mobile || 'N/A' %></span></div>
+                    <div class="mb-2"><small class="text-secondary d-block text-uppercase" style="font-size:0.7rem;letter-spacing:1px;">Email Address</small><span class="text-light fw-medium"><i class="fas fa-envelope text-info me-2"></i><%= session.email || 'N/A' %></span></div>
+                    <div><small class="text-secondary d-block text-uppercase" style="font-size:0.7rem;letter-spacing:1px;">Home Address</small><span class="text-light fw-medium"><i class="fas fa-map-marker-alt text-danger me-2"></i><%= session.address || 'N/A' %></span></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.08);">
+                <button type="button" class="btn btn-secondary rounded-pill px-4 w-100" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<% } %>
+
