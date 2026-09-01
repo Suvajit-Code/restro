@@ -43,7 +43,7 @@ const hasFirebaseConfig = () => Boolean(
     firebaseConfig.authDomain
 );
 
-let useFirebase = process.env.USE_FIREBASE === 'true' && hasFirebaseConfig();
+let useFirebase = process.env.USE_FIREBASE !== 'false' && hasFirebaseConfig();
 const localDbStore: Record<string, Record<string, any>[]> = {};
 let fallbackWarned = false;
 let initDbPromise: Promise<void> | null = null;
