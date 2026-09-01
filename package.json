@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
     "dev": "tsx watch src/app.ts",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "test": "node --test tests/**/*.test.js"
   },
   "keywords": [],
   "author": "",
