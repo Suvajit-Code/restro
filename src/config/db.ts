@@ -283,6 +283,28 @@ export const initDb = async (): Promise<void> => {
                 created_at: new Date().toISOString()
             });
 
+            await insertDb('users', {
+                custom_id: 'Admin/0001',
+                username: process.env.DEFAULT_ADMIN_USERNAME || 'admin',
+                password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
+                role: 'Admin',
+                full_name: 'System Administrator',
+                shop_id: '',
+                status: 'Active',
+                created_at: new Date().toISOString()
+            });
+
+            await insertDb('users', {
+                custom_id: 'Shop/0001',
+                username: process.env.DEFAULT_SHOP_USERNAME || 'shop',
+                password: process.env.DEFAULT_SHOP_PASSWORD || 'shop123',
+                role: 'Shop',
+                full_name: 'Main Branch Manager',
+                shop_id: 'KPK-0001',
+                status: 'Active',
+                created_at: new Date().toISOString()
+            });
+
             console.log('[DB] ✅ Seeded default sample data.');
         } catch (err) {
             console.error('[DB] Seed error (non-fatal, continuing):', err);

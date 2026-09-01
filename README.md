@@ -152,6 +152,8 @@ FIREBASE_DATABASE_URL=your_database_url
 Important:
 - If `USE_FIREBASE` is not set to `true`, the app uses the built-in in-memory fallback mode.
 - This makes local development smooth even without a real Firebase project.
+- A fresh local database includes these demo accounts: Admin `admin` / `admin123`, and Shop Manager `shop` / `shop123`.
+- Override demo credentials with `DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_PASSWORD`, `DEFAULT_SHOP_USERNAME`, and `DEFAULT_SHOP_PASSWORD` in `.env` before deployment.
 
 ## Notes on Frontend and UI
 
